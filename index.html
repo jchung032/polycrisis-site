@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#c8002a">
+<title>Polycrisis Strategies | Strategic Risk Consulting</title>
+<meta name="description" content="Real-time AI-powered intelligence on geopolitical, climate, and economic risks shaping our world. Updated 3x daily.">
+<meta property="og:title" content="Polycrisis Strategies | Global Risk Intelligence">
+<meta property="og:description" content="Real-time AI-powered intelligence on geopolitical, climate, and economic risks shaping our world. Updated 3x daily.">
+<meta property="og:url" content="https://polycrisisstrategies.com">
+<meta property="og:type" content="website">
+<meta name="robots" content="index, follow">
+<meta name="google-site-verification" content="bXHZsXRMj7dJyFj4D9K4n-Hw_a7QDXquyFkULAgs5TM" />
+<meta name="keywords" content="geopolitical risk, climate risk, economic risk, global intelligence, polycrisis, risk analysis">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --white: #ffffff;
+  --off-white: #f8f6f2;
+  --light-gray: #f0ede8;
+  --mid-gray: #d4cfc8;
+  --text-muted: #888074;
+  --text: #1a1814;
+  --text-light: #4a4640;
+  --accent: #c8002a;
+  --accent-dark: #8c0020;
+  --geo: #c8002a;
+  --climate: #0066cc;
+  --economic: #00704a;
+  --border: #e0dbd3;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--white); color:var(--text); font-family:'Source Serif 4',Georgia,serif; font-weight:300; }
+
+/* HEADER */
+header { position:sticky; top:0; z-index:200; background:var(--white); border-bottom:1px solid var(--border); }
+.header-top { display:flex; align-items:center; justify-content:space-between; padding:0 2rem; height:64px; max-width:1400px; margin:0 auto; }
+.logo-name { font-family:'Playfair Display',serif; font-weight:900; font-size:1.7rem; letter-spacing:-0.01em; line-height:1; }
+.logo-name span { color:var(--accent); }
+.logo-sub { font-family:'DM Sans',sans-serif; font-size:0.58rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--text-muted); margin-top:2px; }
+.header-center { flex:1; text-align:center; font-family:'DM Sans',sans-serif; font-size:0.72rem; color:var(--text-muted); padding:0 2rem; }
+.header-right { display:flex; align-items:center; gap:1rem; }
+
+
+/* NAV */
+.nav-bar { border-bottom:3px solid var(--text); }
+.nav-inner { max-width:1400px; margin:0 auto; padding:0 2rem; display:flex; }
+.nav-btn { background:none; border:none; border-bottom:3px solid transparent; margin-bottom:-3px; padding:0.6rem 1.2rem; font-family:'DM Sans',sans-serif; font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
+.nav-btn:hover { color:var(--text); }
+.nav-btn.active { color:var(--text); border-bottom-color:var(--accent); }
+
+/* RISK RIBBON */
+.risk-ribbon { background:var(--text); color:white; padding:0.55rem 0; }
+.risk-ribbon-inner { max-width:1400px; margin:0 auto; padding:0 2rem; display:flex; align-items:center; gap:2rem; flex-wrap:wrap; }
+.ribbon-label { font-family:'DM Sans',sans-serif; font-size:0.6rem; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:rgba(255,255,255,0.4); white-space:nowrap; }
+.ribbon-items { display:flex; gap:2rem; flex-wrap:wrap; }
+.ribbon-item { display:flex; align-items:center; gap:0.6rem; font-family:'DM Sans',sans-serif; font-size:0.68rem; }
+.ribbon-name { color:rgba(255,255,255,0.6); }
+.ribbon-bar { width:60px; height:3px; background:rgba(255,255,255,0.15); position:relative; }
+.ribbon-fill { position:absolute; left:0; top:0; bottom:0; transition:width 1s ease; }
+.ribbon-level { font-weight:600; }
+.lvl-geo,.fill-geo { color:#ff7070; background:#ff7070; }
+.lvl-clim,.fill-clim { color:#70b8ff; background:#70b8ff; }
+.lvl-econ,.fill-econ { color:#70ffb8; background:#70ffb8; }
+.ribbon-level.lvl-geo { background:none; }
+.ribbon-level.lvl-clim { background:none; }
+.ribbon-level.lvl-econ { background:none; }
+
+/* NEXT UPDATE BAR */
+.next-bar { background:var(--off-white); border-bottom:1px solid var(--border); padding:0.35rem 2rem; font-family:'DM Sans',sans-serif; font-size:0.63rem; color:var(--text-muted); text-align:center; letter-spacing:0.04em; }
+
+/* PAGE */
+.page-wrap { max-width:1400px; margin:0 auto; padding:2rem; }
+.news-layout { display:grid; grid-template-columns:1fr 300px; gap:2.5rem; }
+@media(max-width:1024px){ .news-layout{grid-template-columns:1fr;} .sidebar{display:none;} }
+
+/* GRID */
+.main-grid { display:grid; grid-template-columns:repeat(6,1fr); border-top:1px solid var(--border); }
+
+/* HERO */
+.card-hero { grid-column:span 6; display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border); padding:2rem 0; gap:2rem; }
+.card-hero .card-visual { background:var(--light-gray); min-height:240px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+.card-visual-bg { position:absolute; inset:0; background-image:repeating-linear-gradient(45deg,var(--text) 0,var(--text) 1px,transparent 1px,transparent 14px); opacity:0.05; }
+.card-visual-word { font-family:'Playfair Display',serif; font-size:4.5rem; font-weight:900; color:var(--text); opacity:0.07; z-index:1; text-align:center; padding:1rem; line-height:1; }
+
+/* WIDE */
+.card-wide { grid-column:span 3; border-bottom:1px solid var(--border); padding:1.5rem 0; }
+.card-wide:first-of-type,.card-wide:nth-of-type(odd) { padding-right:1.5rem; border-right:1px solid var(--border); }
+.card-wide:nth-of-type(even) { padding-left:1.5rem; }
+
+/* NORMAL */
+.card-normal { grid-column:span 2; border-bottom:1px solid var(--border); padding:1.25rem 0; }
+.card-normal:not(:last-child) { padding-right:1.2rem; border-right:1px solid var(--border); }
+.card-normal:not(:first-child) { padding-left:1.2rem; }
+
+/* CARD ELEMENTS */
+.card-cat { font-family:'DM Sans',sans-serif; font-size:0.6rem; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; margin-bottom:0.6rem; display:flex; align-items:center; gap:0.5rem; }
+.card-cat::before { content:''; display:inline-block; width:18px; height:2px; background:currentColor; }
+.cat-geopolitical { color:var(--geo); }
+.cat-climate { color:var(--climate); }
+.cat-economic { color:var(--economic); }
+
+.card-hl { font-family:'Playfair Display',serif; font-weight:700; line-height:1.2; color:var(--text); margin-bottom:0.7rem; letter-spacing:-0.02em; }
+.card-hero .card-hl { font-size:2.1rem; margin-bottom:1rem; }
+.card-wide .card-hl { font-size:1.35rem; }
+.card-normal .card-hl { font-size:1.05rem; }
+
+.card-body { font-size:0.9rem; line-height:1.72; color:var(--text-light); font-weight:300; }
+.card-hero .card-body { font-size:0.97rem; }
+
+.card-meta { display:flex; align-items:center; gap:0.6rem; margin-top:0.8rem; font-family:'DM Sans',sans-serif; font-size:0.63rem; color:var(--text-muted); flex-wrap:wrap; }
+.meta-dot { width:3px; height:3px; border-radius:50%; background:var(--mid-gray); }
+
+.sev { padding:0.12rem 0.45rem; font-size:0.56rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; border-radius:2px; }
+.sev-critical { background:#fff0f0; color:var(--geo); border:1px solid #ffd0d0; }
+.sev-high { background:#fff5e0; color:#a05000; border:1px solid #ffd8a0; }
+.sev-medium { background:#f0f4ff; color:#0044aa; border:1px solid #c0d0ff; }
+.sev-low { background:#f0fff8; color:var(--economic); border:1px solid #a0f0d0; }
+
+/* SIDEBAR */
+.sidebar { border-left:1px solid var(--border); padding-left:2rem; }
+.sb-section { border-bottom:1px solid var(--border); padding-bottom:1.5rem; margin-bottom:1.5rem; }
+.sb-title { font-family:'DM Sans',sans-serif; font-size:0.6rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; border-bottom:2px solid var(--text); padding-bottom:0.4rem; margin-bottom:1rem; }
+.briefing { font-size:0.88rem; line-height:1.78; color:var(--text-light); font-style:italic; }
+.rm-row { margin-bottom:0.9rem; }
+.rm-labels { display:flex; justify-content:space-between; font-family:'DM Sans',sans-serif; font-size:0.66rem; margin-bottom:0.3rem; }
+.rm-name { color:var(--text); font-weight:500; }
+.rm-val { font-weight:700; }
+.rm-track { height:3px; background:var(--light-gray); position:relative; }
+.rm-fill { position:absolute; left:0; top:0; bottom:0; transition:width 1s ease; }
+.signals { list-style:none; display:flex; flex-direction:column; gap:0.6rem; }
+.signal-item { font-family:'DM Sans',sans-serif; font-size:0.74rem; color:var(--text-light); padding-left:0.9rem; border-left:2px solid var(--border); line-height:1.45; transition:border-color 0.2s; }
+.signal-item:hover { border-left-color:var(--accent); color:var(--text); }
+
+/* FOOTER */
+footer { background:var(--text); color:white; margin-top:3rem; }
+.footer-inner { max-width:1400px; margin:0 auto; padding:3rem 2rem 2rem; }
+.footer-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:2rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:2rem; margin-bottom:1.5rem; }
+@media(max-width:768px){ .footer-grid{grid-template-columns:1fr;} }
+.footer-logo-name { font-family:'Playfair Display',serif; font-weight:900; font-size:1.5rem; color:white; margin-bottom:0.5rem; }
+.footer-logo-name span { color:var(--accent); }
+.footer-desc { font-size:0.82rem; line-height:1.65; color:rgba(255,255,255,0.45); font-weight:300; }
+.footer-col-title { font-family:'DM Sans',sans-serif; font-size:0.58rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:1rem; }
+.footer-btns { display:flex; flex-direction:column; gap:0.7rem; }
+.f-btn { background:none; border:1px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.75); padding:0.55rem 1.1rem; font-family:'DM Sans',sans-serif; font-size:0.73rem; font-weight:500; cursor:pointer; transition:all 0.2s; text-align:left; }
+.f-btn:hover { border-color:white; color:white; }
+.f-btn.primary { background:var(--accent); border-color:var(--accent); color:white; }
+.f-btn.primary:hover { background:var(--accent-dark); }
+.footer-links { font-family:'DM Sans',sans-serif; font-size:0.76rem; color:rgba(255,255,255,0.45); line-height:2.1; }
+.footer-bottom { display:flex; justify-content:space-between; font-family:'DM Sans',sans-serif; font-size:0.63rem; color:rgba(255,255,255,0.25); }
+
+/* MODALS */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:500; display:flex; align-items:center; justify-content:center; padding:2rem; opacity:0; pointer-events:none; transition:opacity 0.25s; }
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal { background:white; max-width:620px; width:100%; max-height:88vh; overflow-y:auto; transform:translateY(16px); transition:transform 0.25s; }
+.modal-overlay.open .modal { transform:translateY(0); }
+.modal-header { display:flex; justify-content:space-between; align-items:center; padding:1.5rem 2rem; border-bottom:2px solid var(--text); }
+.modal-title { font-family:'Playfair Display',serif; font-size:1.5rem; font-weight:700; }
+.modal-close { background:none; border:1px solid var(--border); width:32px; height:32px; cursor:pointer; font-size:1rem; color:var(--text-muted); display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+.modal-close:hover { border-color:var(--accent); color:var(--accent); }
+.modal-body { padding:2rem; }
+.modal-body p { font-size:0.9rem; line-height:1.8; color:var(--text-light); margin-bottom:1rem; }
+.modal-body h3 { font-family:'Playfair Display',serif; font-size:1.05rem; font-weight:700; color:var(--text); margin:1.3rem 0 0.5rem; }
+.form-group { margin-bottom:1rem; }
+.form-label { display:block; font-family:'DM Sans',sans-serif; font-size:0.63rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.35rem; }
+.form-input,.form-textarea { width:100%; background:var(--off-white); border:1px solid var(--border); color:var(--text); font-family:'Source Serif 4',serif; font-size:0.88rem; padding:0.65rem 0.9rem; outline:none; transition:border-color 0.2s; }
+.form-input:focus,.form-textarea:focus { border-color:var(--text); }
+.form-textarea { resize:vertical; min-height:110px; }
+.form-submit { background:var(--accent); border:none; color:white; font-family:'DM Sans',sans-serif; font-size:0.73rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:0.75rem 2rem; cursor:pointer; transition:background 0.2s; }
+.form-submit:hover { background:var(--accent-dark); }
+.form-success { font-family:'DM Sans',sans-serif; font-size:0.73rem; color:var(--economic); padding:0.75rem 1rem; border:1px solid var(--economic); background:#f0fff8; margin-top:0.75rem; display:none; }
+
+.card-hero,.card-wide,.card-normal { cursor:pointer; transition:background 0.15s; }
+.card-hero:hover { background:var(--off-white); }
+.card-wide:hover,.card-normal:hover { background:var(--off-white); }
+.card-hl:hover { color:var(--accent); }
+
+/* ERROR */
+.error-state { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:40vh; gap:1rem; text-align:center; }
+.error-state h3 { font-family:'Playfair Display',serif; font-size:1.8rem; color:var(--accent); }
+.error-state p { font-size:0.88rem; color:var(--text-muted); max-width:380px; line-height:1.65; }
+.retry-btn { background:var(--text); color:white; border:none; padding:0.6rem 1.5rem; font-family:'DM Sans',sans-serif; font-size:0.73rem; font-weight:600; cursor:pointer; }
+.retry-btn:hover { background:var(--accent); }
+
+/* ANIMATIONS */
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.card-hero{animation:fadeUp 0.5s ease both}
+.card-wide:nth-child(2){animation:fadeUp 0.5s 0.1s ease both}
+.card-wide:nth-child(3){animation:fadeUp 0.5s 0.15s ease both}
+.card-normal:nth-child(4){animation:fadeUp 0.5s 0.2s ease both}
+.card-normal:nth-child(5){animation:fadeUp 0.5s 0.25s ease both}
+.card-normal:nth-child(6){animation:fadeUp 0.5s 0.3s ease both}
+
+@media(max-width:768px){
+  .header-center{display:none}
+  .page-wrap{padding:1rem}
+  .card-hero{grid-template-columns:1fr}
+  .card-hero .card-visual{display:none}
+  .card-wide,.card-normal{grid-column:span 6!important;padding:1rem 0!important;border-right:none!important;padding-right:0!important;padding-left:0!important}
+}
+
+/* Accessibility - keyboard focus styles */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.card-hero:focus, .card-wide:focus, .card-normal:focus {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* High contrast text improvements */
+.card-body { color: var(--text-light); }
+.card-meta { color: var(--text-muted); }
+
+/* Ensure sufficient color contrast */
+.sev-medium { color: #003799; }
+
+</style>
+</head>
+<body>
+<a href="#main-content" style="position:absolute;left:-9999px;top:0;z-index:9999;background:var(--accent,#c8002a);color:white;padding:0.75rem 1.5rem;font-family:sans-serif;font-size:0.9rem;font-weight:600;text-decoration:none;" 
+   onfocus="this.style.left='0'" onblur="this.style.left='-9999px'">Skip to main content</a>
+
+<header role="banner" aria-label="Site header">
+  <div class="header-top">
+    <div>
+      <div class="logo-name">Polycrisis<span>.</span></div>
+      <div class="logo-sub">Global Risk Intelligence</div>
+    </div>
+    <div class="header-center" id="header-date"></div>
+    <div class="header-right"></div>
+  </div>
+  <nav class="nav-bar" role="navigation" aria-label="News categories">
+    <div class="nav-inner">
+      <button class="nav-btn" onclick="filterCat('geopolitical',this)" id="nav-geo">Geopolitical</button>
+      <button class="nav-btn" onclick="filterCat('climate',this)" id="nav-clim">Climate</button>
+      <button class="nav-btn" onclick="filterCat('economic',this)" id="nav-econ">Economic</button>
+    </div>
+  </nav>
+</header>
+
+<div class="risk-ribbon" role="region" aria-label="Global risk index">
+  <div class="risk-ribbon-inner">
+    <span class="ribbon-label">Risk Index</span>
+    <div class="ribbon-items">
+      <div class="ribbon-item">
+        <span class="ribbon-name">Geopolitical</span>
+        <div class="ribbon-bar"><div class="ribbon-fill fill-geo" id="rf-geo" style="width:0%"></div></div>
+        <span class="ribbon-level lvl-geo" id="geo-level">—</span>
+      </div>
+      <div class="ribbon-item">
+        <span class="ribbon-name">Climate</span>
+        <div class="ribbon-bar"><div class="ribbon-fill fill-clim" id="rf-clim" style="width:0%"></div></div>
+        <span class="ribbon-level lvl-clim" id="clim-level">—</span>
+      </div>
+      <div class="ribbon-item">
+        <span class="ribbon-name">Economic</span>
+        <div class="ribbon-bar"><div class="ribbon-fill fill-econ" id="rf-econ" style="width:0%"></div></div>
+        <span class="ribbon-level lvl-econ" id="econ-level">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="next-bar" id="next-bar">Updates daily at 6am · 12pm · 6pm</div>
+
+<div class="page-wrap" id="main-content">
+  <div class="news-layout">
+    <div id="news-container" role="main" aria-live="polite" aria-label="News articles">
+      <div class="error-state" style="min-height:50vh">
+        <div style="font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--text-muted)">Gathering intelligence…</div>
+        <p>Loading the latest global risk intelligence. Please wait.</p>
+      </div>
+    </div>
+    <aside class="sidebar" role="complementary" aria-label="Risk analysis sidebar">
+      <div class="sb-section">
+        <div class="sb-title">Analyst Briefing</div>
+        <p class="briefing" id="analyst-briefing">Awaiting intelligence feed…</p>
+      </div>
+      <div class="sb-section">
+        <div class="sb-title">Risk Meters</div>
+        <div class="rm-row">
+          <div class="rm-labels"><span class="rm-name">Geopolitical</span><span class="rm-val lvl-geo" id="rm-geo">—</span></div>
+          <div class="rm-track"><div class="rm-fill fill-geo" id="rfm-geo" style="width:0%"></div></div>
+        </div>
+        <div class="rm-row">
+          <div class="rm-labels"><span class="rm-name">Climate</span><span class="rm-val lvl-clim" id="rm-clim">—</span></div>
+          <div class="rm-track"><div class="rm-fill fill-clim" id="rfm-clim" style="width:0%"></div></div>
+        </div>
+        <div class="rm-row">
+          <div class="rm-labels"><span class="rm-name">Economic</span><span class="rm-val lvl-econ" id="rm-econ">—</span></div>
+          <div class="rm-track"><div class="rm-fill fill-econ" id="rfm-econ" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-title">Latest Signals</div>
+        <ul class="signals" id="signals-list"><li class="signal-item">Awaiting feed…</li></ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<footer role="contentinfo" aria-label="Site footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo-name">Polycrisis<span>.</span></div>
+        <p class="footer-desc">Real-time intelligence on geopolitical, climate, and economic forces shaping our world. Navigating complexity with confidence.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">Connect</div>
+        <div class="footer-btns">
+          <button class="f-btn primary" onclick="openModal('contact-modal')">✉ Contact Us</button>
+          <button class="f-btn" onclick="openModal('about-modal')">About Polycrisis</button>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Coverage</div>
+        <div class="footer-links">Geopolitical Risk<br>Climate Risk<br>Economic Risk<br>Strategic Consulting</div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Polycrisis Strategies. All rights reserved. · <span style="cursor:pointer;text-decoration:underline;" onclick="openModal('privacy-modal')">Privacy Policy</span></span>
+      <span id="footer-next">Updates at 6am · 12pm · 6pm</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Article Modal -->
+<div class="modal-overlay" id="article-modal" role="dialog" aria-modal="true" aria-labelledby="article-modal-title" onclick="if(event.target===this)closeModal('article-modal')">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header" id="article-modal-header">
+      <div class="modal-title" id="article-modal-title" style="font-size:1.2rem;line-height:1.3;max-width:90%;letter-spacing:-0.02em"></div>
+      <button class="modal-close" onclick="closeModal('article-modal')" aria-label="Close article">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="article-modal-meta" style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;font-family:'DM Sans',sans-serif;font-size:0.65rem;color:var(--text-muted);flex-wrap:wrap;"></div>
+      <div id="article-modal-cat" style="margin-bottom:1rem"></div>
+      <p id="article-modal-summary" style="font-size:1rem;line-height:1.78;color:var(--text);font-weight:400;margin-bottom:1.25rem;border-left:3px solid var(--accent);padding-left:1rem;font-style:italic;"></p>
+      <div style="border-top:1px solid var(--border);margin:1.25rem 0"></div>
+      <p id="article-modal-detail" style="font-size:0.92rem;line-height:1.82;color:var(--text-light);font-weight:300;"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="modal-overlay" id="contact-modal" role="dialog" aria-modal="true" aria-labelledby="contact-title" onclick="if(event.target===this)closeModal('contact-modal')">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Contact Us</div><button class="modal-close" onclick="closeModal('contact-modal')" aria-label="Close contact form">✕</button></div>
+    <div class="modal-body">
+      <p>Have a question or want to discuss strategic risk consulting? Fill out the form and we'll be in touch shortly.</p>
+      <div class="form-group"><label class="form-label">Your Name</label><input id="c-name" class="form-input" type="text" placeholder="Full name" required></div>
+      <div class="form-group"><label class="form-label">Your Email</label><input id="c-email" class="form-input" type="email" placeholder="email@example.com" required></div>
+      <div class="form-group"><label class="form-label">Message</label><textarea id="c-msg" class="form-textarea" placeholder="How can we help you?"></textarea></div>
+      <button class="form-submit" onclick="handleContact()">Send Message →</button>
+      <div class="form-success" id="form-success">✓ Your email client will open now.</div>
+    </div>
+  </div>
+</div>
+
+<!-- About Modal -->
+<div class="modal-overlay" id="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-title" onclick="if(event.target===this)closeModal('about-modal')">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">About Polycrisis Strategies</div><button class="modal-close" onclick="closeModal('about-modal')" aria-label="Close about dialog">✕</button></div>
+    <div class="modal-body">
+      <p>We live in a world where crises no longer arrive one at a time. Geopolitical tensions, climate disruption, and economic instability now converge simultaneously — amplifying one another in ways that overwhelm conventional analysis and catch leaders off guard.</p>
+      <h3>Why We Exist</h3>
+      <p>Polycrisis Strategies was founded on a simple but urgent premise: the world needs sharper tools for understanding risk convergence. We focus on the three forces most reshaping our world — geopolitics, climate, and economics — and how they interact to create compounding threats that no single lens can capture.</p>
+      <h3>Our Focus Areas</h3>
+      <p><strong>Geopolitical Risk —</strong> Conflicts, alliances, sanctions, and power shifts that redraw the map of global stability.</p>
+      <p><strong>Climate Risk —</strong> Extreme weather, resource scarcity, energy transitions, and the cascading economic consequences of a warming planet.</p>
+      <p><strong>Economic Risk —</strong> Market volatility, inflation, debt crises, supply chain disruptions, and the financial fault lines running beneath global commerce.</p>
+      <h3>Who We Serve</h3>
+      <p>Executives navigating volatile markets. Investors pricing in systemic risk. Governments assessing emerging threats. Organizations that understand the cost of being surprised is always higher than the cost of being prepared.</p>
+      <h3>The Name</h3>
+      <p>"Polycrisis" describes a cluster of crises that interact so the whole is more overwhelming than the sum of its parts. We chose it deliberately — because naming the challenge clearly is the first step toward meeting it.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let allArticles = [];
+let currentFilter = 'all';
+
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+async function loadNews(retry=false) {
+  const btn = document.getElementById('refresh-btn');
+  if(btn){ btn.disabled=true; btn.textContent='↻ Loading…'; }
+  // Never show a blank loading screen - placeholder or cached content stays visible
+  const setStatus = (msg) => {};
+  try {
+    const res = await fetch("/api/news",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-haiku-4-5-20251001",
+        max_tokens:2000,
+        system:"You are a JSON API. Output ONLY raw JSON. No markdown fences, no explanation, no extra text. Just the JSON object.",
+        messages:[{role:"user",content:`${(()=>{
+  const h=new Date().getHours();
+  const cat=h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
+  const catDesc=cat==='geopolitical'?'geopolitical conflicts, military tensions, diplomatic crises, sanctions, and political instability':cat==='climate'?'climate events, extreme weather, environmental disasters, ecological crises, and climate policy':' economic news, market movements, trade disputes, currency crises, central bank decisions, and financial risks';
+  const regions=['Middle East','East Asia','Europe','South Asia','Africa','Latin America','Pacific','Central Asia'];
+  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  const picked=shuffle([...regions]).slice(0,6);
+  return `Generate 6 ${cat.toUpperCase()} news stories for ${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}. Each story MUST be from a different region. Assigned regions: ${picked.map((r,i)=>`Article ${i+1}: ${r}`).join(', ')}. Cover ${catDesc}. Use SPECIFIC names, figures, and dates. Output ONLY raw JSON: {"risk_levels":{"geopolitical":{"score":FILL,"label":"FILL"},"climate":{"score":FILL,"label":"FILL"},"economic":{"score":FILL,"label":"FILL"}},"analyst_briefing":"FILL one sentence on biggest ${cat} risk right now with specific country names.","ticker_items":["FILL","FILL","FILL"],"articles":[{"id":1,"category":"${cat}","severity":"critical","headline":"FILL","summary":"FILL 2 sentences with names and numbers.","detail":"FILL 3 new sentences not in summary.","source":"Reuters","time_ago":"1h"},{"id":2,"category":"${cat}","severity":"high","headline":"FILL","summary":"FILL 2 sentences.","detail":"FILL 3 new sentences.","source":"Bloomberg","time_ago":"2h"},{"id":3,"category":"${cat}","severity":"high","headline":"FILL","summary":"FILL 2 sentences.","detail":"FILL 3 new sentences.","source":"AP","time_ago":"3h"},{"id":4,"category":"${cat}","severity":"high","headline":"FILL","summary":"FILL 2 sentences.","detail":"FILL 3 new sentences.","source":"BBC","time_ago":"4h"},{"id":5,"category":"${cat}","severity":"medium","headline":"FILL","summary":"FILL 2 sentences.","detail":"FILL 3 new sentences.","source":"FT","time_ago":"5h"},{"id":6,"category":"${cat}","severity":"medium","headline":"FILL","summary":"FILL 2 sentences.","detail":"FILL 3 new sentences.","source":"Guardian","time_ago":"6h"}]}`;
+})()}`}]
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(JSON.stringify(data.error||data));
+    const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    console.log('RAW:',raw.substring(0,200));
+    const f=raw.indexOf('{');
+    if(f===-1) throw new Error('No JSON');
+    let depth=0,last=-1;
+    for(let i=f;i<raw.length;i++){
+      if(raw[i]==='{')depth++;
+      else if(raw[i]==='}'){depth--;if(depth===0){last=i;break;}}
+    }
+    let js=raw.substring(f,last>-1?last+1:raw.length);
+    let parsed;
+    try{parsed=JSON.parse(js);}
+    catch(e){
+      console.log('Parse error:', e.message);
+      js=js.replace(/,\s*}/g,'}').replace(/,\s*]/g,']');
+      parsed=JSON.parse(js);
+    }
+    console.log('Parsed OK, articles:', parsed.articles?.length);
+    allArticles=parsed.articles||[];
+    renderBoard(parsed);
+    console.log('renderBoard called');
+    updateNavCounts();
+    try{
+      // Save latest data
+      const sh=new Date().getHours();
+      const sCat=sh>=6&&sh<12?'geo':sh>=12&&sh<18?'clim':'econ';
+      localStorage.setItem('pc_data_'+sCat,JSON.stringify(parsed));
+      localStorage.setItem('pc_ts_'+sCat,Date.now()+'');
+      localStorage.setItem('pc_ver','3');
+      // Append articles to history
+      const now = Date.now();
+      const thirtyDays = 30*24*60*60*1000;
+      let history = [];
+      try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
+      // Tag each article with session (morning/midday/evening) and date
+      const h = new Date(now).getHours();
+      const session = h < 12 ? 'morning' : h < 18 ? 'midday' : 'evening';
+      const dateStr = new Date(now).toDateString();
+      const sessionKey = dateStr + '-' + session;
+      const stamped = (parsed.articles||[]).map(a=>({...a, savedAt: now, saveDate: dateStr, session: session, sessionKey: sessionKey}));
+      // Only skip if same headline saved in the SAME session (not same day)
+      const sessionHeadlines = new Set(
+        history.filter(a=>a.sessionKey===sessionKey).map(a=>a.headline)
+      );
+      const newArticles = stamped.filter(a=>!sessionHeadlines.has(a.headline));
+      // Keep history under 30 days
+      const filtered = history.filter(a=> (now - a.savedAt) < thirtyDays);
+      const newHistory = [...newArticles, ...filtered];
+      localStorage.setItem('pc_history', JSON.stringify(newHistory));
+      console.log('Session:', sessionKey, '| New articles:', newArticles.length, '| Total history:', newHistory.length);
+    }catch(e){}
+    scheduleNext();
+    if(btn){ btn.disabled=false; btn.textContent='↻ Refresh'; }
+  } catch(err) {
+    console.error('Err:',err.message);
+    const errMsg = err.message.substring(0, 300);
+    console.error('LOAD ERROR:', errMsg);
+    // Always show error in sidebar so we can see it even with placeholder showing
+    document.getElementById('analyst-briefing').innerHTML = `<span style="color:var(--accent);font-family:'DM Sans',sans-serif;font-size:0.72rem;">API Error: ${errMsg}</span>`;
+    if(!retry){ setTimeout(()=>loadNews(true),5000); }
+  }
+}
+
+function renderBoard(d) {
+  const rl=d.risk_levels||{};
+  const setRisk=(key,id1,id2,id3,id4,delay)=>{
+    if(!rl[key])return;
+    document.getElementById(id1).textContent=rl[key].label;
+    document.getElementById(id2).textContent=rl[key].label;
+    setTimeout(()=>{
+      document.getElementById(id3).style.width=rl[key].score+'%';
+      document.getElementById(id4).style.width=rl[key].score+'%';
+    },delay);
+  };
+  setRisk('geopolitical','geo-level','rm-geo','rf-geo','rfm-geo',200);
+  setRisk('climate','clim-level','rm-clim','rf-clim','rfm-clim',300);
+  setRisk('economic','econ-level','rm-econ','rf-econ','rfm-econ',400);
+  if(d.analyst_briefing) document.getElementById('analyst-briefing').textContent=d.analyst_briefing;
+  if(d.ticker_items?.length) document.getElementById('signals-list').innerHTML=d.ticker_items.map(t=>`<li class="signal-item">${t}</li>`).join('');
+  renderArticles(d.articles||[]);
+}
+
+function renderArticles(articles, historyMode=false) {
+  const container=document.getElementById('news-container');
+  if(!articles.length){container.innerHTML=`<div class="error-state"><h3>No stories</h3><p>No articles in this category yet. Check back after the next update.</p></div>`;return;}
+  const ts=new Date().toLocaleString('en-US',{timeZoneName:'short'});
+
+  if(historyMode){
+    // Group by session: "Monday, March 6 — Evening Update"
+    const groups = {};
+    const order = [];
+    articles.forEach(a => {
+      const dateLabel = a.savedAt ? new Date(a.savedAt).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) : 'Recent';
+      const sessionLabel = a.session ? (a.session.charAt(0).toUpperCase()+a.session.slice(1)+' Update') : 'Update';
+      const key = dateLabel + ' — ' + sessionLabel;
+      if(!groups[key]){ groups[key]=[]; order.push(key); }
+      groups[key].push(a);
+    });
+    let html = '';
+    order.forEach(key => {
+      const arts = groups[key];
+      html += `<div style="margin-bottom:2.5rem;">
+        <div style="font-family:'DM Sans',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);border-bottom:2px solid var(--accent);padding-bottom:0.5rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:0.5rem;">
+          <span style="color:var(--accent);">●</span> ${key}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          ${arts.map(a => mkWide(a)).join('')}
+        </div>
+      </div>`;
+    });
+    container.innerHTML = html + `<p style="font-family:'DM Sans',sans-serif;font-size:0.62rem;color:var(--text-muted);text-align:right;margin-top:1rem;">${articles.length} articles archived · Last 30 days · Powered by Claude AI</p>`;
+    return;
+  }
+
+  // Build grid: hero first, then pairs of wide cards, then normal cards
+  let gridHTML = '<div class="main-grid">';
+  articles.forEach((a, i) => {
+    if(i === 0) gridHTML += mkHero(a);
+    else if(i === 1 || i === 2) gridHTML += mkWide(a);
+    else gridHTML += mkNormal(a);
+  });
+  gridHTML += '</div>';
+  container.innerHTML = gridHTML + `<p style="font-family:'DM Sans',sans-serif;font-size:0.62rem;color:var(--text-muted);text-align:right;margin-top:1rem;">Last updated: ${ts} · Powered by Claude AI</p>`;
+}
+
+const catLabel=c=>(c||'').charAt(0).toUpperCase()+(c||'').slice(1);
+
+function openArticle(id) {
+  const a = allArticles.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('article-modal-title').textContent = a.headline;
+  document.getElementById('article-modal-meta').innerHTML = `
+    <span>${a.source||'Intelligence Feed'}</span>
+    <div class="meta-dot"></div>
+    <span>${a.time_ago||'Today'}</span>
+    <div class="meta-dot"></div>
+    <span class="sev sev-${a.severity}">${(a.severity||'').toUpperCase()}</span>`;
+  document.getElementById('article-modal-cat').innerHTML = `<div class="card-cat cat-${a.category}" style="margin-bottom:0">${catLabel(a.category)}</div>`;
+  document.getElementById('article-modal-summary').textContent = a.summary || '';
+  const detailEl = document.getElementById('article-modal-detail');
+  if (a.detail && a.detail !== a.summary) {
+    detailEl.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.75rem;">In Depth</div>${a.detail}`;
+  } else {
+    detailEl.textContent = a.detail || '';
+  }
+  openModal('article-modal');
+}
+
+function mkHero(a) {
+  return `<div class="card-hero" onclick="openArticle(${a.id})" onkeypress="if(event.key==='Enter')openArticle(${a.id})" tabindex="0" role="article" aria-label="${a.headline}" style="display:block;grid-column:span 6;">
+    <div class="card-cat cat-${a.category}">${catLabel(a.category)}</div>
+    <div class="card-hl" style="font-size:2.6rem;margin-bottom:1rem;max-width:820px;">${a.headline}</div>
+    <div class="card-body" style="font-size:1.05rem;max-width:700px;">${a.summary}</div>
+    <div class="card-meta"><span>${a.source}</span><div class="meta-dot"></div><span>${a.time_ago}</span><div class="meta-dot"></div><span class="sev sev-${a.severity}">${(a.severity||'').toUpperCase()}</span><div class="meta-dot"></div><span style="color:var(--accent);font-weight:600;">Read more →</span></div>
+  </div>`;
+}
+
+function mkWide(a) {
+  return `<div class="card-wide" onclick="openArticle(${a.id})" onkeypress="if(event.key==='Enter')openArticle(${a.id})" tabindex="0" role="article" aria-label="${a.headline}">
+    <div class="card-cat cat-${a.category}">${catLabel(a.category)}</div>
+    <div class="card-hl">${a.headline}</div>
+    <div class="card-body">${a.summary}</div>
+    <div class="card-meta"><span>${a.source}</span><div class="meta-dot"></div><span>${a.time_ago}</span><div class="meta-dot"></div><span class="sev sev-${a.severity}">${(a.severity||'').toUpperCase()}</span><div class="meta-dot"></div><span style="color:var(--accent);font-weight:600;">Read more →</span></div>
+  </div>`;
+}
+
+function mkNormal(a) {
+  return `<div class="card-normal" onclick="openArticle(${a.id})" onkeypress="if(event.key==='Enter')openArticle(${a.id})" tabindex="0" role="article" aria-label="${a.headline}">
+    <div class="card-cat cat-${a.category}">${catLabel(a.category)}</div>
+    <div class="card-hl">${a.headline}</div>
+    <div class="card-body">${a.summary}</div>
+    <div class="card-meta"><span>${a.source}</span><div class="meta-dot"></div><span>${a.time_ago}</span><div class="meta-dot"></div><span class="sev sev-${a.severity}">${(a.severity||'').toUpperCase()}</span><div class="meta-dot"></div><span style="color:var(--accent);font-weight:600;">Read more →</span></div>
+  </div>`;
+}
+
+function filterCat(cat,btn) {
+  currentFilter=cat;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // Always load from history for category view
+  let history = [];
+  try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
+  const catArticles = history.filter(a=>a.category===cat);
+  if(catArticles.length > 0){
+    renderArticles(catArticles, true);
+  } else {
+    // No history yet - show current articles if they match
+    const current = allArticles.filter(a=>a.category===cat);
+    renderArticles(current.length ? current : allArticles, false);
+  }
+}
+
+function updateNavCounts() {
+  document.getElementById('nav-geo').textContent = 'Geopolitical';
+  document.getElementById('nav-clim').textContent = 'Climate';
+  document.getElementById('nav-econ').textContent = 'Economic';
+}
+
+function getCurrentCategory() {
+  const h = new Date().getHours();
+  if(h >= 6 && h < 12) return 'geopolitical';
+  if(h >= 12 && h < 18) return 'climate';
+  return 'economic'; // 6pm-6am
+}
+
+function getNextUpdate() {
+  const now = new Date();
+  const h = now.getHours();
+  let next = new Date(now);
+  if(h < 6){ next.setHours(6,0,0,0); }
+  else if(h < 12){ next.setHours(12,0,0,0); }
+  else if(h < 18){ next.setHours(18,0,0,0); }
+  else { next.setDate(next.getDate()+1); next.setHours(6,0,0,0); }
+  return next;
+}
+
+function scheduleNext() {
+  const now = new Date();
+  const next = getNextUpdate();
+  const cat = getCurrentCategory();
+  const catLabels = {geopolitical:'Geopolitical',climate:'Climate',economic:'Economic'};
+  const nextCat = next.getHours()===6?'Geopolitical':next.getHours()===12?'Climate':'Economic';
+  const label = 'Next: '+nextCat+' update at '+next.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+  const el = document.getElementById('next-bar');
+  if(el) el.textContent = 'Now showing: '+catLabels[cat]+' · '+label;
+  const fel = document.getElementById('footer-next');
+  if(fel) fel.textContent = label;
+  setTimeout(()=>loadNews(), next-now);
+}
+
+function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+function handleContact(){
+  const name=document.getElementById('c-name').value;
+  const email=document.getElementById('c-email').value;
+  const msg=document.getElementById('c-msg').value;
+  window.location.href=`mailto:jchung032@gmail.com?subject=Polycrisis Inquiry from ${encodeURIComponent(name)}&body=${encodeURIComponent('From: '+name+'\nEmail: '+email+'\n\n'+msg)}`;
+  document.getElementById('form-success').style.display='block';
+}
+
+// Global error handler
+window.onerror = function(msg, src, line, col, err) {
+  document.getElementById('analyst-briefing').innerHTML = '<span style="color:red;font-size:0.7rem">JS Error: ' + msg + ' (line ' + line + ')</span>';
+  return false;
+};
+
+window.addEventListener('unhandledrejection', function(e) {
+  document.getElementById('analyst-briefing').innerHTML = '<span style="color:red;font-size:0.7rem">Promise Error: ' + e.reason + '</span>';
+});
+
+// Placeholder data shown instantly on first load
+const PLACEHOLDER = {
+  risk_levels: {
+    geopolitical: {score:78, label:"High"},
+    climate: {score:62, label:"Elevated"},
+    economic: {score:71, label:"High"}
+  },
+  analyst_briefing: "Loading latest intelligence briefing…",
+  ticker_items: ["Loading latest signals…","","","",""],
+  articles: [
+    {id:1,category:"geopolitical",severity:"critical",headline:"Loading latest geopolitical intelligence…",summary:"Fresh analysis is being gathered. This will update shortly with the latest global risk intelligence.",detail:"",source:"Intelligence Feed",time_ago:"",size:"hero"},
+    {id:2,category:"economic",severity:"high",headline:"Loading economic risk analysis…",summary:"Economic intelligence is being processed and will appear here momentarily.",detail:"",source:"Intelligence Feed",time_ago:"",size:"wide"},
+    {id:3,category:"climate",severity:"high",headline:"Loading climate risk briefing…",summary:"Climate risk data is being compiled and will appear here shortly.",detail:"",source:"Intelligence Feed",time_ago:"",size:"wide"},
+    {id:4,category:"geopolitical",severity:"high",headline:"Loading geopolitical update…",summary:"Gathering latest intelligence.",detail:"",source:"Intelligence Feed",time_ago:"",size:"normal"},
+    {id:5,category:"economic",severity:"medium",headline:"Loading economic update…",summary:"Gathering latest data.",detail:"",source:"Intelligence Feed",time_ago:"",size:"normal"},
+    {id:6,category:"climate",severity:"medium",headline:"Loading climate update…",summary:"Gathering latest data.",detail:"",source:"Intelligence Feed",time_ago:"",size:"normal"}
+  ]
+};
+
+// Load from cache or show placeholder then fetch
+(function(){
+  try {
+    const CACHE_VERSION = '3';
+    const h=new Date().getHours();
+    const sessionCat=h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
+    const cacheKey='pc_data_'+sessionCat;
+    const d=localStorage.getItem(cacheKey), ts=localStorage.getItem('pc_ts_'+sessionCat), cv=localStorage.getItem('pc_ver');
+    if(d&&ts&&cv===CACHE_VERSION&&(Date.now()-parseInt(ts))<6*60*60*1000){
+      const parsed=JSON.parse(d); if(!parsed||!parsed.articles){throw new Error('bad cache');}
+      allArticles=parsed.articles||[];
+      renderBoard(parsed);
+      scheduleNext();
+      updateNavCounts();
+      return;
+    }
+  } catch(e){}
+  // Show placeholder instantly, then load real data in background
+  allArticles = PLACEHOLDER.articles;
+  renderBoard(PLACEHOLDER);
+  loadNews();
+})();
+</script>
+<!-- Privacy Policy Modal -->
+<div class="modal-overlay" id="privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-title" onclick="if(event.target===this)closeModal('privacy-modal')">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <div class="modal-title">Privacy Policy</div>
+      <button class="modal-close" onclick="closeModal('privacy-modal')" aria-label="Close privacy policy">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-family:'DM Sans',sans-serif;font-size:0.65rem;color:var(--text-muted);">Last updated: March 6, 2026</p>
+
+      <h3>Overview</h3>
+      <p>Polycrisis Strategies ("we", "us", or "our") operates polycrisisstrategies.com. This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our site.</p>
+
+      <h3>Information We Collect</h3>
+      <p>We do not require you to create an account or provide personal information to use this site. We may collect basic anonymous usage data such as pages visited and time spent on the site through standard web analytics tools (e.g. Google Analytics) to help us improve the service.</p>
+
+      <h3>Cookies</h3>
+      <p>Our site uses localStorage in your browser to cache news articles for faster loading. This data stays on your device and is never transmitted to our servers. We may also use third-party advertising cookies (e.g. Google AdSense) which help serve relevant ads. You can disable cookies in your browser settings at any time.</p>
+
+      <h3>AI-Generated Content</h3>
+      <p>News articles and risk analysis on this site are generated using artificial intelligence (Claude by Anthropic). While we strive for accuracy, AI-generated content may contain errors or inaccuracies. Content should not be taken as financial, legal, or professional advice.</p>
+
+      <h3>Third-Party Services</h3>
+      <p>We use the following third-party services which have their own privacy policies:</p>
+      <p>· <strong>Anthropic (Claude AI)</strong> — powers our news generation engine<br>
+         · <strong>Google AdSense</strong> — may be used to display relevant advertisements<br>
+         · <strong>Google Analytics</strong> — anonymous site traffic analysis<br>
+         · <strong>Netlify / GoDaddy</strong> — website hosting</p>
+
+      <h3>Data Retention</h3>
+      <p>Article history is stored locally in your browser's localStorage for up to 30 days. We do not store any personal data on our servers.</p>
+
+      <h3>Children's Privacy</h3>
+      <p>This site is not directed at children under 13. We do not knowingly collect personal information from children.</p>
+
+      <h3>Changes to This Policy</h3>
+      <p>We may update this Privacy Policy from time to time. We will notify users of any changes by updating the date at the top of this page.</p>
+
+      <h3>Contact Us</h3>
+      <p>If you have any questions about this Privacy Policy, please contact us at <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="49232
