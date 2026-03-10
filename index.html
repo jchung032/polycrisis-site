@@ -592,16 +592,24 @@ function filterCat(cat,btn) {
   currentFilter=cat;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  // Always load from history for category view
-  let history = [];
-  try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
-  const catArticles = history.filter(a=>a.category===cat);
-  if(catArticles.length > 0){
-    renderArticles(catArticles, true);
+
+  const h = new Date().getHours();
+  const scheduledCat = h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
+
+  if(cat === scheduledCat) {
+    // Show current live articles for today's scheduled category
+    renderArticles(allArticles, false);
   } else {
-    // No history yet - show current articles if they match
-    const current = allArticles.filter(a=>a.category===cat);
-    renderArticles(current.length ? current : allArticles, false);
+    // Show archived articles for other categories
+    let history = [];
+    try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
+    const catArticles = history.filter(a=>a.category===cat);
+    if(catArticles.length > 0){
+      renderArticles(catArticles, true);
+    } else {
+      const container = document.getElementById('news-container');
+      container.innerHTML = `<div class="error-state"><h3>No archived stories yet</h3><p>${cat.charAt(0).toUpperCase()+cat.slice(1)} updates run ${cat==='geopolitical'?'6am–12pm':cat==='climate'?'12pm–6pm':'6pm–6am'}. Check back then!</p></div>`;
+    }
   }
 }
 
