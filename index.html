@@ -596,19 +596,30 @@ function filterCat(cat,btn) {
   const h = new Date().getHours();
   const scheduledCat = h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
 
+  // Always try history first for any category
+  let history = [];
+  try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
+  const catArticles = history.filter(a=>a.category===cat);
+
   if(cat === scheduledCat) {
-    // Show current live articles for today's scheduled category
-    renderArticles(allArticles, false);
+    // Current scheduled category - show live articles
+    // If allArticles has the right category use those, otherwise use history
+    const liveForCat = allArticles.filter(a=>a.category===cat);
+    if(liveForCat.length > 0){
+      renderArticles(liveForCat, false);
+    } else if(catArticles.length > 0){
+      renderArticles(catArticles, true);
+    } else {
+      renderArticles(allArticles, false);
+    }
   } else {
-    // Show archived articles for other categories
-    let history = [];
-    try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
-    const catArticles = history.filter(a=>a.category===cat);
+    // Non-scheduled category - show archive
     if(catArticles.length > 0){
       renderArticles(catArticles, true);
     } else {
+      const scheduleLabel = cat==='geopolitical'?'6am–12pm':cat==='climate'?'12pm–6pm':'6pm–6am';
       const container = document.getElementById('news-container');
-      container.innerHTML = `<div class="error-state"><h3>No archived stories yet</h3><p>${cat.charAt(0).toUpperCase()+cat.slice(1)} updates run ${cat==='geopolitical'?'6am–12pm':cat==='climate'?'12pm–6pm':'6pm–6am'}. Check back then!</p></div>`;
+      container.innerHTML = `<div class="error-state"><h3>No archived stories yet</h3><p>${cat.charAt(0).toUpperCase()+cat.slice(1)} updates run ${scheduleLabel}. Archives will appear here after the first update.</p></div>`;
     }
   }
 }
@@ -702,6 +713,7 @@ const PLACEHOLDER = {
       const parsed=JSON.parse(d); if(!parsed||!parsed.articles){throw new Error('bad cache');}
       allArticles=parsed.articles||[];
       renderBoard(parsed);
+      renderArticles(allArticles, false);
       scheduleNext();
       updateNavCounts();
       return;
