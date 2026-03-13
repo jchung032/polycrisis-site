@@ -738,7 +738,7 @@ const PLACEHOLDER = {
 // Load from cache or show placeholder then fetch
 (function(){
   try {
-    const CACHE_VERSION = '3';
+    const CACHE_VERSION = '4';
     const h=new Date().getHours();
     const sessionCat=h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
     const cacheKey='pc_data_'+sessionCat;
