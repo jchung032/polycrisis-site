@@ -445,6 +445,7 @@ async function loadNews(retry=false) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(JSON.stringify(data.error||data));
+    if (!data || !data.content) throw new Error('Bad response: ' + JSON.stringify(data).substring(0,200));
     const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
     console.log('RAW:',raw.substring(0,200));
     const f=raw.indexOf('{');
