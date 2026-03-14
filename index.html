@@ -517,6 +517,39 @@ function renderBoard(d) {
   if(d.analyst_briefing) document.getElementById('analyst-briefing').textContent=d.analyst_briefing;
   if(d.ticker_items?.length) document.getElementById('signals-list').innerHTML=d.ticker_items.map(t=>`<li class="signal-item">${t}</li>`).join('');
   renderArticles(d.articles||[]);
+  // Append past sessions below live articles
+  setTimeout(appendPastArticles, 100);
+}
+
+function appendPastArticles() {
+  const h = new Date().getHours();
+  const cat = h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
+  const now = new Date();
+  const session = now.getHours()<12?'morning':now.getHours()<18?'midday':'evening';
+  const sessionKey = now.toDateString()+'-'+session;
+  let history = [];
+  try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
+  const pastArticles = history.filter(a=>a.category===cat && a.sessionKey!==sessionKey);
+  if(!pastArticles.length) return;
+  const container = document.getElementById('news-container');
+  if(!container) return;
+  const groups = {}, order = [];
+  pastArticles.forEach(a => {
+    const dateLabel = a.savedAt ? new Date(a.savedAt).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) : 'Recent';
+    const sessionLabel = a.session ? (a.session.charAt(0).toUpperCase()+a.session.slice(1)+' Update') : 'Update';
+    const key = dateLabel + ' — ' + sessionLabel;
+    if(!groups[key]){ groups[key]=[]; order.push(key); }
+    groups[key].push(a);
+  });
+  const dmSans = "font-family:sans-serif";
+  let archiveHTML = `<div style="margin-top:2rem;border-top:2px solid var(--border);padding-top:1.5rem;">`;
+  archiveHTML += `<div style="${dmSans};font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1.5rem;">Previous Updates</div>`;
+  order.forEach(key => {
+    const arts = groups[key];
+    archiveHTML += `<div style="margin-bottom:2rem;"><div style="${dmSans};font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:0.4rem;margin-bottom:1rem;">${key}</div><div class="main-grid">${arts.map((a,i)=>i===0?mkHero(a):i<3?mkWide(a):mkNormal(a)).join('')}</div></div>`;
+  });
+  archiveHTML += `</div>`;
+  container.innerHTML += archiveHTML;
 }
 
 function renderArticles(articles, historyMode=false) {
