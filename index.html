@@ -447,9 +447,13 @@ async function loadNews(retry=false) {
     if (!res.ok) throw new Error(JSON.stringify(data.error||data));
     if (!data) throw new Error('No response from API');
     if (data.error) throw new Error(JSON.stringify(data.error));
-    // API now returns parsed newsData directly
+    // API returns parsed newsData directly
+    // Handle case where model uses different key names
     const parsed = data;
-    if (!parsed.articles || !parsed.articles.length) throw new Error('No articles in response: ' + JSON.stringify(data).substring(0,200));
+    parsed.articles = parsed.articles || parsed.stories || parsed.news || parsed.items || [];
+    console.log('Response keys:', Object.keys(parsed).join(', '));
+    console.log('Articles count:', parsed.articles.length);
+    if (!parsed.articles.length) throw new Error('No articles in response: ' + JSON.stringify(data).substring(0,300));
     console.log('Parsed OK, articles:', parsed.articles?.length);
     allArticles=parsed.articles||[];
     renderBoard(parsed);
@@ -461,7 +465,7 @@ async function loadNews(retry=false) {
       const sCat=sh>=6&&sh<12?'geo':sh>=12&&sh<18?'clim':'econ';
       localStorage.setItem('pc_data_'+sCat,JSON.stringify(parsed));
       localStorage.setItem('pc_ts_'+sCat,Date.now()+'');
-      localStorage.setItem('pc_ver','3');
+      localStorage.setItem('pc_ver','4');
       // Append articles to history
       const now = Date.now();
       const thirtyDays = 30*24*60*60*1000;
