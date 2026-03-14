@@ -1,6 +1,6 @@
 const UPSTASH_URL = process.env.KV_REST_API_URL;
 const UPSTASH_TOKEN = process.env.KV_REST_API_TOKEN;
- 
+
 async function redisGet(key) {
   try {
     const res = await fetch(`${UPSTASH_URL}/get/${encodeURIComponent(key)}`, {
@@ -11,7 +11,7 @@ async function redisGet(key) {
   } catch(e) { console.log('Redis GET error:', e.message); }
   return null;
 }
- 
+
 async function redisSet(key, value, exSeconds) {
   try {
     const encoded = encodeURIComponent(key);
@@ -27,7 +27,7 @@ async function redisSet(key, value, exSeconds) {
     console.log('Redis SET result:', JSON.stringify(data));
   } catch(e) { console.log('Redis SET error:', e.message); }
 }
- 
+
 function getWindowKey() {
   const now = new Date();
   const pst = new Date(now.getTime() - 7 * 60 * 60 * 1000);
@@ -38,29 +38,57 @@ function getWindowKey() {
   console.log('Window key:', key, '| PST hour:', h);
   return key;
 }
- 
+
+// Extract and validate JSON from Anthropic response, stripping markdown fences
+function extractNewsData(anthropicResponse) {
+  const raw = (anthropicResponse.content || [])
+    .filter(b => b.type === 'text')
+    .map(b => b.text)
+    .join('');
+
+  // Strip markdown fences
+  let cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+  // Find JSON object boundaries
+  const start = cleaned.indexOf('{');
+  if (start === -1) throw new Error('No JSON object found in response');
+  let depth = 0, end = -1;
+  for (let i = start; i < cleaned.length; i++) {
+    if (cleaned[i] === '{') depth++;
+    else if (cleaned[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+  }
+  let jsonStr = cleaned.substring(start, end > -1 ? end + 1 : cleaned.length);
+
+  // Try parse, fix trailing commas if needed
+  try { return JSON.parse(jsonStr); }
+  catch(e) {
+    jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+    return JSON.parse(jsonStr);
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
- 
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
- 
+
   try {
     const windowKey = getWindowKey();
     console.log('Checking cache for key:', windowKey);
- 
+
     const cached = await redisGet(windowKey);
     if (cached) {
       console.log('Cache HIT');
       res.setHeader('X-Cache', 'HIT');
       return res.status(200).json(cached);
     }
- 
+
     console.log('Cache MISS - calling Anthropic');
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
- 
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -70,16 +98,24 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify(body)
     });
- 
-    const data = await response.json();
-    if (!response.ok) throw new Error(JSON.stringify(data.error || data));
- 
-    console.log('Anthropic OK, saving to cache...');
-    await redisSet(windowKey, data, 6 * 60 * 60);
- 
+
+    const anthropicData = await response.json();
+    if (!response.ok) throw new Error(JSON.stringify(anthropicData.error || anthropicData));
+
+    // Parse and validate the news data before caching
+    console.log('Anthropic OK, parsing response...');
+    const newsData = extractNewsData(anthropicData);
+    if (!newsData.articles || !newsData.articles.length) throw new Error('No articles in response');
+
+    console.log('Parsed OK, articles:', newsData.articles.length, '- saving to cache...');
+    await redisSet(windowKey, newsData, 6 * 60 * 60);
+
     res.setHeader('X-Cache', 'MISS');
-    return res.status(200).json(data);
- 
+    // Return in the format the client expects
+    return res.status(200).json({
+      content: [{ type: 'text', text: JSON.stringify(newsData) }]
+    });
+
   } catch (error) {
     console.log('Handler error:', error.message);
     return res.status(500).json({ error: 'API call failed', details: error.message });
