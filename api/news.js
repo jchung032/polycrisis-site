@@ -14,8 +14,7 @@ async function redisGet(key) {
 
 async function redisSet(key, value, exSeconds) {
   try {
-    const encoded = encodeURIComponent(key);
-    const res = await fetch(`${UPSTASH_URL}/set/${encoded}`, {
+    const res = await fetch(`${UPSTASH_URL}/set/${encodeURIComponent(key)}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${UPSTASH_TOKEN}`,
@@ -39,27 +38,20 @@ function getWindowKey() {
   return key;
 }
 
-// Extract and validate JSON from Anthropic response, stripping markdown fences
 function extractNewsData(anthropicResponse) {
   const raw = (anthropicResponse.content || [])
     .filter(b => b.type === 'text')
     .map(b => b.text)
     .join('');
-
-  // Strip markdown fences
   let cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-
-  // Find JSON object boundaries
   const start = cleaned.indexOf('{');
-  if (start === -1) throw new Error('No JSON object found in response');
+  if (start === -1) throw new Error('No JSON object found');
   let depth = 0, end = -1;
   for (let i = start; i < cleaned.length; i++) {
     if (cleaned[i] === '{') depth++;
     else if (cleaned[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
   }
   let jsonStr = cleaned.substring(start, end > -1 ? end + 1 : cleaned.length);
-
-  // Try parse, fix trailing commas if needed
   try { return JSON.parse(jsonStr); }
   catch(e) {
     jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
@@ -79,6 +71,7 @@ export default async function handler(req, res) {
     const windowKey = getWindowKey();
     console.log('Checking cache for key:', windowKey);
 
+    // Cache HIT — return parsed news data directly
     const cached = await redisGet(windowKey);
     if (cached) {
       console.log('Cache HIT');
@@ -86,6 +79,7 @@ export default async function handler(req, res) {
       return res.status(200).json(cached);
     }
 
+    // Cache MISS — call Anthropic, parse, cache, return
     console.log('Cache MISS - calling Anthropic');
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 
@@ -102,19 +96,15 @@ export default async function handler(req, res) {
     const anthropicData = await response.json();
     if (!response.ok) throw new Error(JSON.stringify(anthropicData.error || anthropicData));
 
-    // Parse and validate the news data before caching
-    console.log('Anthropic OK, parsing response...');
+    console.log('Anthropic OK, parsing...');
     const newsData = extractNewsData(anthropicData);
     if (!newsData.articles || !newsData.articles.length) throw new Error('No articles in response');
 
-    console.log('Parsed OK, articles:', newsData.articles.length, '- saving to cache...');
+    console.log('Parsed OK, articles:', newsData.articles.length);
     await redisSet(windowKey, newsData, 6 * 60 * 60);
 
     res.setHeader('X-Cache', 'MISS');
-    // Return in the format the client expects
-    return res.status(200).json({
-      content: [{ type: 'text', text: JSON.stringify(newsData) }]
-    });
+    return res.status(200).json(newsData);
 
   } catch (error) {
     console.log('Handler error:', error.message);
