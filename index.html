@@ -446,30 +446,10 @@ async function loadNews(retry=false) {
     const data = await res.json();
     if (!res.ok) throw new Error(JSON.stringify(data.error||data));
     if (!data) throw new Error('No response from API');
-    let parsed;
-    // Handle both formats: pre-parsed {articles:[...]} or raw Anthropic {content:[...]}
-    if (data.articles) {
-      parsed = data;
-    } else {
-      if (!data.content) throw new Error('Bad response: ' + JSON.stringify(data).substring(0,200));
-      let raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-      raw = raw.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'').trim();
-      console.log('RAW:',raw.substring(0,200));
-      const f=raw.indexOf('{');
-      if(f===-1) throw new Error('No JSON found');
-      let depth=0,last=-1;
-      for(let i=f;i<raw.length;i++){
-        if(raw[i]==='{')depth++;
-        else if(raw[i]==='}'){depth--;if(depth===0){last=i;break;}}
-      }
-      let js=raw.substring(f,last>-1?last+1:raw.length);
-      try{parsed=JSON.parse(js);}
-      catch(e){
-        console.log('Parse error:', e.message);
-        js=js.replace(/,\s*}/g,'}').replace(/,\s*]/g,']');
-        parsed=JSON.parse(js);
-      }
-    }
+    if (data.error) throw new Error(JSON.stringify(data.error));
+    // API now returns parsed newsData directly
+    const parsed = data;
+    if (!parsed.articles || !parsed.articles.length) throw new Error('No articles in response: ' + JSON.stringify(data).substring(0,200));
     console.log('Parsed OK, articles:', parsed.articles?.length);
     allArticles=parsed.articles||[];
     renderBoard(parsed);
