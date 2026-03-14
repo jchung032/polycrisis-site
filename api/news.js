@@ -72,14 +72,16 @@ module.exports = async function handler(req, res) {
     console.log('Checking cache for key:', windowKey);
 
     const cached = await redisGet(windowKey);
-    if (cached) {
-      console.log('Cache HIT');
+    if (cached && cached.articles && cached.articles.length > 0) {
+      console.log('Cache HIT, articles:', cached.articles.length);
       res.setHeader('X-Cache', 'HIT');
       return res.status(200).json(cached);
     }
 
     console.log('Cache MISS - calling Anthropic');
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    // Force higher token limit to prevent truncation
+    body.max_tokens = 4000;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -96,7 +98,11 @@ module.exports = async function handler(req, res) {
 
     console.log('Anthropic OK, parsing...');
     const newsData = extractNewsData(anthropicData);
-    if (!newsData.articles || !newsData.articles.length) throw new Error('No articles in response');
+    
+    if (!newsData.articles || !newsData.articles.length) {
+      console.log('No articles found, keys:', Object.keys(newsData).join(', '));
+      throw new Error('No articles in response');
+    }
 
     console.log('Parsed OK, articles:', newsData.articles.length);
     await redisSet(windowKey, newsData, 6 * 60 * 60);
