@@ -524,12 +524,11 @@ function renderBoard(d) {
 function appendPastArticles() {
   const h = new Date().getHours();
   const cat = h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
-  const now = new Date();
-  const session = now.getHours()<12?'morning':now.getHours()<18?'midday':'evening';
-  const sessionKey = now.toDateString()+'-'+session;
   let history = [];
   try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
-  const pastArticles = history.filter(a=>a.category===cat && a.sessionKey!==sessionKey);
+  // Exclude articles already shown as live (by headline match)
+  const liveHeadlines = new Set(allArticles.map(a=>a.headline));
+  const pastArticles = history.filter(a=>a.category===cat && !liveHeadlines.has(a.headline));
   if(!pastArticles.length) return;
   const container = document.getElementById('news-container');
   if(!container) return;
@@ -656,11 +655,9 @@ function filterCat(cat,btn) {
   let history = [];
   try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
 
-  // Get history for this category, excluding current session to avoid dupes
-  const now = new Date();
-  const session = now.getHours()<12?'morning':now.getHours()<18?'midday':'evening';
-  const sessionKey = now.toDateString()+'-'+session;
-  const pastArticles = history.filter(a=>a.category===cat && a.sessionKey!==sessionKey);
+  // Exclude articles already shown as live (by headline match)
+  const liveHeadlines = new Set(allArticles.map(a=>a.headline));
+  const pastArticles = history.filter(a=>a.category===cat && !liveHeadlines.has(a.headline));
 
   if(cat === scheduledCat) {
     // Current category: show live articles on top, then past history below
