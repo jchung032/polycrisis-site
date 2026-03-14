@@ -655,16 +655,14 @@ function filterCat(cat,btn) {
         if(!groups[key]){ groups[key]=[]; order.push(key); }
         groups[key].push(a);
       });
-      let archiveHTML = '<div style="margin-top:2rem;border-top:2px solid var(--border);padding-top:1.5rem;">';
-      archiveHTML += '<div style="font-family:'DM Sans',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1.5rem;">Previous Updates</div>';
+      const dmSans = "font-family:sans-serif";
+      let archiveHTML = `<div style="margin-top:2rem;border-top:2px solid var(--border);padding-top:1.5rem;">`;
+      archiveHTML += `<div style="${dmSans};font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1.5rem;">Previous Updates</div>`;
       order.forEach(key => {
         const arts = groups[key];
-        archiveHTML += `<div style="margin-bottom:2rem;">
-          <div style="font-family:'DM Sans',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:0.4rem;margin-bottom:1rem;">${key}</div>
-          <div class="main-grid">${arts.map((a,i)=>i===0?mkHero(a):i<3?mkWide(a):mkNormal(a)).join('')}</div>
-        </div>`;
+        archiveHTML += `<div style="margin-bottom:2rem;"><div style="${dmSans};font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:0.4rem;margin-bottom:1rem;">${key}</div><div class="main-grid">${arts.map((a,i)=>i===0?mkHero(a):i<3?mkWide(a):mkNormal(a)).join('')}</div></div>`;
       });
-      archiveHTML += '</div>';
+      archiveHTML += `</div>`;
       container.innerHTML += archiveHTML;
     } else {
       renderArticles(live, false);
