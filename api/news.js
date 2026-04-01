@@ -25,34 +25,47 @@ async function redisSet(key, value, exSeconds) {
       },
       body: JSON.stringify([JSON.stringify(value), 'EX', exSeconds])
     });
-    const data = await res.json();
-    console.log('Redis SET result:', JSON.stringify(data));
+    await res.json();
   } catch(e) { console.log('Redis SET error:', e.message); }
 }
 
-// Store archive index as a JSON array in a single Redis key
 async function addToArchiveIndex(windowKey, meta) {
   try {
     let index = await redisGet(ARCHIVE_INDEX_KEY) || [];
-    // Avoid duplicates
     if (!index.find(e => e.key === windowKey)) {
-      index.unshift({ key: windowKey, ...meta }); // newest first
-      // Keep max 42 entries (7 days * 3 sessions/day)
-      index = index.slice(0, 42);
+      index.unshift({ key: windowKey, ...meta });
+      index = index.slice(0, 42); // Keep last 2 weeks of windows
       await redisSet(ARCHIVE_INDEX_KEY, index, SEVEN_DAYS);
-      console.log('Archive index updated, total entries:', index.length);
     }
   } catch(e) { console.log('Archive index error:', e.message); }
 }
 
+/**
+ * FIXED: Uses official IANA timezone strings to prevent mismatch 
+ * between server location and user location.
+ */
 function getWindowInfo() {
   const now = new Date();
-  const pst = new Date(now.getTime() - 7 * 60 * 60 * 1000);
-  const h = pst.getUTCHours();
+  // Forces the calculation to stay in Pacific Time regardless of server location
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: "America/Los_Angeles",
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit'
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const getPart = (type) => parts.find(p => p.type === type).value;
+  
+  const h = parseInt(getPart('hour'));
+  const dateStr = `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+  
+  // Define windows: 6am-12pm (Geopolitical), 12pm-6pm (Climate), 6pm-6am (Economic)
   const win = h >= 6 && h < 12 ? 'geo' : h >= 12 && h < 18 ? 'clim' : 'econ';
-  const dateStr = pst.toISOString().slice(0, 10);
   const key = `news:${dateStr}:${win}`;
-  console.log('Window key:', key, '| PST hour:', h);
+  
   return { key, win, dateStr, hour: h };
 }
 
@@ -61,116 +74,75 @@ function extractNewsData(anthropicResponse) {
     .filter(b => b.type === 'text')
     .map(b => b.text)
     .join('');
+    
   let cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
   const start = cleaned.indexOf('{');
-  if (start === -1) throw new Error('No JSON object found');
-  let depth = 0, end = -1;
-  for (let i = start; i < cleaned.length; i++) {
-    if (cleaned[i] === '{') depth++;
-    else if (cleaned[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
-  }
-  let jsonStr = cleaned.substring(start, end > -1 ? end + 1 : cleaned.length);
-  try { return JSON.parse(jsonStr); }
-  catch(e) {
-    jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
-    return JSON.parse(jsonStr);
-  }
+  const end = cleaned.lastIndexOf('}');
+  let jsonStr = cleaned.substring(start, end + 1);
+  return JSON.parse(jsonStr);
 }
 
 module.exports = async function handler(req, res) {
+  // Handle CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
+  
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ── GET /api/news?archive=true ── return past sessions from Redis
-  if (req.method === 'GET') {
-    if (req.query && req.query.archive === 'true') {
-      try {
-        const index = await redisGet(ARCHIVE_INDEX_KEY) || [];
-        console.log('Archive index fetched, entries:', index.length);
+  const { key: windowKey, win, dateStr } = getWindowInfo();
 
-        const { key: currentKey } = getWindowInfo();
-        const pastEntries = index.filter(e => e.key !== currentKey);
-
-        const results = await Promise.all(
-          pastEntries.map(async (entry) => {
-            const data = await redisGet(entry.key);
-            if (!data || !data.articles) return null;
-            return {
-              key: entry.key,
-              win: entry.win,
-              dateStr: entry.dateStr,
-              savedAt: entry.savedAt,
-              articles: data.articles
-            };
-          })
-        );
-
-        const archive = results.filter(Boolean);
-        console.log('Archive sessions returned:', archive.length);
-        return res.status(200).json({ archive });
-      } catch(error) {
-        console.log('Archive fetch error:', error.message);
-        return res.status(500).json({ error: 'Archive fetch failed', details: error.message });
-      }
-    }
-    return res.status(405).json({ error: 'Method not allowed' });
+  // Archive retrieval logic
+  if (req.method === 'GET' && req.query.archive === 'true') {
+    const index = await redisGet(ARCHIVE_INDEX_KEY) || [];
+    const pastEntries = index.filter(e => e.key !== windowKey);
+    const results = await Promise.all(pastEntries.map(async (e) => {
+      const data = await redisGet(e.key);
+      return data ? { ...e, articles: data.articles } : null;
+    }));
+    return res.status(200).json({ archive: results.filter(Boolean) });
   }
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
-  // ── POST /api/news ── serve current window articles
   try {
-    const { key: windowKey, win, dateStr } = getWindowInfo();
-    console.log('Checking cache for key:', windowKey);
-
+    // 1. Check Cache
     const cached = await redisGet(windowKey);
-    if (cached && cached.articles && cached.articles.length > 0) {
-      console.log('Cache HIT, articles:', cached.articles.length);
-      res.setHeader('X-Cache', 'HIT');
+    if (cached) {
+      console.log('CACHE HIT:', windowKey);
       return res.status(200).json(cached);
     }
 
-    console.log('Cache MISS - calling Anthropic');
+    // 2. Cache Miss - Call Anthropic
+    console.log('CACHE MISS:', windowKey);
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    body.max_tokens = 4000;
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    
+    const response = await fetch('[https://api.anthropic.com/v1/messages](https://api.anthropic.com/v1/messages)', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        ...body,
+        max_tokens: 4000
+      })
     });
 
-    const anthropicData = await response.json();
-    if (!response.ok) throw new Error(JSON.stringify(anthropicData.error || anthropicData));
-
-    console.log('Anthropic OK, parsing...');
-    const newsData = extractNewsData(anthropicData);
-
-    if (!newsData.articles || !newsData.articles.length) {
-      console.log('No articles found, keys:', Object.keys(newsData).join(', '));
-      throw new Error('No articles in response');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Anthropic API error');
     }
 
-    console.log('Parsed OK, articles:', newsData.articles.length);
+    const anthropicData = await response.json();
+    const newsData = extractNewsData(anthropicData);
 
-    // Store for 7 days so archive can access past sessions
+    // 3. Save to Redis and Archive
     await redisSet(windowKey, newsData, SEVEN_DAYS);
-
-    // Register in archive index
     await addToArchiveIndex(windowKey, { win, dateStr, savedAt: Date.now() });
 
-    res.setHeader('X-Cache', 'MISS');
     return res.status(200).json(newsData);
-
   } catch (error) {
-    console.log('Handler error:', error.message);
-    return res.status(500).json({ error: 'API call failed', details: error.message });
+    console.error('Handler Error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch news', details: error.message });
   }
-}
+};
