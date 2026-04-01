@@ -419,11 +419,11 @@ let currentFilter = 'all';
 
 document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
+let archiveCache = null; // in-memory cache of archive for this page session
+
 async function loadNews(retry=false) {
   const btn = document.getElementById('refresh-btn');
   if(btn){ btn.disabled=true; btn.textContent='↻ Loading…'; }
-  // Never show a blank loading screen - placeholder or cached content stays visible
-  const setStatus = (msg) => {};
   try {
     const res = await fetch("/api/news",{
       method:"POST",
@@ -447,56 +447,38 @@ async function loadNews(retry=false) {
     if (!res.ok) throw new Error(JSON.stringify(data.error||data));
     if (!data) throw new Error('No response from API');
     if (data.error) throw new Error(JSON.stringify(data.error));
-    // API returns parsed newsData directly
-    // Handle case where model uses different key names
     const parsed = data;
     parsed.articles = parsed.articles || parsed.stories || parsed.news || parsed.items || [];
-    console.log('Response keys:', Object.keys(parsed).join(', '));
-    console.log('Articles count:', parsed.articles.length);
     if (!parsed.articles.length) throw new Error('No articles in response: ' + JSON.stringify(data).substring(0,300));
-    console.log('Parsed OK, articles:', parsed.articles?.length);
-    allArticles=parsed.articles||[];
+    console.log('Loaded OK, articles:', parsed.articles.length);
+    allArticles = parsed.articles || [];
     renderBoard(parsed);
-    console.log('renderBoard called');
     updateNavCounts();
-    try{
-      // Save latest data
-      const sh=new Date().getHours();
-      const sCat=sh>=6&&sh<12?'geo':sh>=12&&sh<18?'clim':'econ';
-      localStorage.setItem('pc_data_'+sCat,JSON.stringify(parsed));
-      localStorage.setItem('pc_ts_'+sCat,Date.now()+'');
-      localStorage.setItem('pc_ver','4');
-      // Append articles to history
-      const now = Date.now();
-      const thirtyDays = 30*24*60*60*1000;
-      let history = [];
-      try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
-      // Tag each article with session (morning/midday/evening) and date
-      const h = new Date(now).getHours();
-      const session = h < 12 ? 'morning' : h < 18 ? 'midday' : 'evening';
-      const dateStr = new Date(now).toDateString();
-      const sessionKey = dateStr + '-' + session;
-      const stamped = (parsed.articles||[]).map(a=>({...a, savedAt: now, saveDate: dateStr, session: session, sessionKey: sessionKey}));
-      // Only skip if same headline saved in the SAME session (not same day)
-      const sessionHeadlines = new Set(
-        history.filter(a=>a.sessionKey===sessionKey).map(a=>a.headline)
-      );
-      const newArticles = stamped.filter(a=>!sessionHeadlines.has(a.headline));
-      // Keep history under 30 days
-      const filtered = history.filter(a=> (now - a.savedAt) < thirtyDays);
-      const newHistory = [...newArticles, ...filtered];
-      localStorage.setItem('pc_history', JSON.stringify(newHistory));
-      console.log('Session:', sessionKey, '| New articles:', newArticles.length, '| Total history:', newHistory.length);
-    }catch(e){}
     scheduleNext();
     if(btn){ btn.disabled=false; btn.textContent='↻ Refresh'; }
   } catch(err) {
-    console.error('Err:',err.message);
+    console.error('Err:', err.message);
     const errMsg = err.message.substring(0, 300);
     console.error('LOAD ERROR:', errMsg);
-    // Always show error in sidebar so we can see it even with placeholder showing
     document.getElementById('analyst-briefing').innerHTML = `<span style="color:var(--accent);font-family:'DM Sans',sans-serif;font-size:0.72rem;">API Error: ${errMsg}</span>`;
-    if(!retry){ setTimeout(()=>loadNews(true),5000); }
+    if(!retry){ setTimeout(()=>loadNews(true), 5000); }
+    if(btn){ btn.disabled=false; btn.textContent='↻ Refresh'; }
+  }
+}
+
+// Fetch archive from Redis via GET /api/news?archive=true
+async function loadArchive() {
+  if (archiveCache) return archiveCache;
+  try {
+    const res = await fetch('/api/news?archive=true', { method: 'GET' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Archive fetch failed');
+    archiveCache = data.archive || [];
+    console.log('Archive loaded, sessions:', archiveCache.length);
+    return archiveCache;
+  } catch(e) {
+    console.error('Archive load error:', e.message);
+    return [];
   }
 }
 
@@ -523,32 +505,35 @@ function renderBoard(d) {
 
 function appendPastArticles() {
   const h = new Date().getHours();
-  const cat = h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
-  let history = [];
-  try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
-  // Exclude articles already shown as live (by headline match)
-  const liveHeadlines = new Set(allArticles.map(a=>a.headline));
-  const pastArticles = history.filter(a=>a.category===cat && !liveHeadlines.has(a.headline));
-  if(!pastArticles.length) return;
+  const win = h>=6&&h<12 ? 'geo' : h>=12&&h<18 ? 'clim' : 'econ';
   const container = document.getElementById('news-container');
-  if(!container) return;
-  const groups = {}, order = [];
-  pastArticles.forEach(a => {
-    const dateLabel = a.savedAt ? new Date(a.savedAt).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) : 'Recent';
-    const sessionLabel = a.session ? (a.session.charAt(0).toUpperCase()+a.session.slice(1)+' Update') : 'Update';
-    const key = dateLabel + ' — ' + sessionLabel;
-    if(!groups[key]){ groups[key]=[]; order.push(key); }
-    groups[key].push(a);
+  if (!container) return;
+
+  loadArchive().then(archive => {
+    const pastSessions = archive.filter(s => s.win === win);
+    if (!pastSessions.length) return;
+
+    const liveHeadlines = new Set(allArticles.map(a => a.headline));
+    const dmSans = "font-family:'DM Sans',sans-serif";
+    let archiveHTML = `<div style="margin-top:2rem;border-top:2px solid var(--border);padding-top:1.5rem;">`;
+    archiveHTML += `<div style="${dmSans};font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1.5rem;">Previous Updates</div>`;
+
+    pastSessions.forEach(session => {
+      const arts = session.articles.filter(a => !liveHeadlines.has(a.headline));
+      if (!arts.length) return;
+      const dateLabel = session.savedAt
+        ? new Date(session.savedAt).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})
+        : session.dateStr || 'Recent';
+      const sessionLabel = session.win==='geo'?'Geopolitical Update':session.win==='clim'?'Climate Update':'Economic Update';
+      archiveHTML += `<div style="margin-bottom:2rem;">
+        <div style="${dmSans};font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:0.4rem;margin-bottom:1rem;">${dateLabel} — ${sessionLabel}</div>
+        <div class="main-grid">${arts.map((a,i)=>i===0?mkHero(a):i<3?mkWide(a):mkNormal(a)).join('')}</div>
+      </div>`;
+    });
+
+    archiveHTML += `</div>`;
+    container.innerHTML += archiveHTML;
   });
-  const dmSans = "font-family:sans-serif";
-  let archiveHTML = `<div style="margin-top:2rem;border-top:2px solid var(--border);padding-top:1.5rem;">`;
-  archiveHTML += `<div style="${dmSans};font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1.5rem;">Previous Updates</div>`;
-  order.forEach(key => {
-    const arts = groups[key];
-    archiveHTML += `<div style="margin-bottom:2rem;"><div style="${dmSans};font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:0.4rem;margin-bottom:1rem;">${key}</div><div class="main-grid">${arts.map((a,i)=>i===0?mkHero(a):i<3?mkWide(a):mkNormal(a)).join('')}</div></div>`;
-  });
-  archiveHTML += `</div>`;
-  container.innerHTML += archiveHTML;
 }
 
 function renderArticles(articles, historyMode=false) {
@@ -644,61 +629,68 @@ function mkNormal(a) {
   </div>`;
 }
 
-function filterCat(cat,btn) {
-  currentFilter=cat;
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+function filterCat(cat, btn) {
+  currentFilter = cat;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
   const h = new Date().getHours();
-  const scheduledCat = h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
+  const scheduledCat = h>=6&&h<12 ? 'geopolitical' : h>=12&&h<18 ? 'climate' : 'economic';
+  const winMap = { geopolitical:'geo', climate:'clim', economic:'econ' };
+  const container = document.getElementById('news-container');
 
-  let history = [];
-  try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
+  // Show live articles for current scheduled category
+  const liveForCat = allArticles.filter(a => a.category === cat);
+  const live = liveForCat.length > 0 ? liveForCat : (cat === scheduledCat ? allArticles : []);
 
-  // Exclude articles already shown as live (by headline match)
-  const liveHeadlines = new Set(allArticles.map(a=>a.headline));
-  const pastArticles = history.filter(a=>a.category===cat && !liveHeadlines.has(a.headline));
+  if (live.length > 0) renderArticles(live, false);
 
-  if(cat === scheduledCat) {
-    // Current category: show live articles on top, then past history below
-    const liveForCat = allArticles.filter(a=>a.category===cat);
-    const live = liveForCat.length > 0 ? liveForCat : allArticles;
-    if(pastArticles.length > 0) {
-      // Merge: live articles first (not in history mode), then past grouped by session
-      renderArticles(live, false);
-      // Append history below
-      const container = document.getElementById('news-container');
-      const groups = {}, order = [];
-      pastArticles.forEach(a => {
-        const dateLabel = a.savedAt ? new Date(a.savedAt).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) : 'Recent';
-        const sessionLabel = a.session ? (a.session.charAt(0).toUpperCase()+a.session.slice(1)+' Update') : 'Update';
-        const key = dateLabel + ' — ' + sessionLabel;
-        if(!groups[key]){ groups[key]=[]; order.push(key); }
-        groups[key].push(a);
-      });
-      const dmSans = "font-family:sans-serif";
-      let archiveHTML = `<div style="margin-top:2rem;border-top:2px solid var(--border);padding-top:1.5rem;">`;
-      archiveHTML += `<div style="${dmSans};font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1.5rem;">Previous Updates</div>`;
-      order.forEach(key => {
-        const arts = groups[key];
-        archiveHTML += `<div style="margin-bottom:2rem;"><div style="${dmSans};font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:0.4rem;margin-bottom:1rem;">${key}</div><div class="main-grid">${arts.map((a,i)=>i===0?mkHero(a):i<3?mkWide(a):mkNormal(a)).join('')}</div></div>`;
-      });
-      archiveHTML += `</div>`;
-      container.innerHTML += archiveHTML;
-    } else {
-      renderArticles(live, false);
-    }
+  // Show loading indicator for archive
+  const archiveDiv = document.createElement('div');
+  archiveDiv.id = 'archive-section';
+  archiveDiv.style.cssText = 'margin-top:2rem;border-top:2px solid var(--border);padding-top:1.5rem;';
+  archiveDiv.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:0.62rem;color:var(--text-muted);text-align:center;padding:1rem;">Loading archive…</div>`;
+
+  if (live.length > 0) {
+    container.appendChild(archiveDiv);
   } else {
-    // Non-scheduled category - show full archive grouped by session
-    const catArticles = history.filter(a=>a.category===cat);
-    if(catArticles.length > 0){
-      renderArticles(catArticles, true);
-    } else {
-      const scheduleLabel = cat==='geopolitical'?'6am–12pm':cat==='climate'?'12pm–6pm':'6pm–6am';
-      const container = document.getElementById('news-container');
-      container.innerHTML = `<div class="error-state"><h3>No archived stories yet</h3><p>${cat.charAt(0).toUpperCase()+cat.slice(1)} updates run ${scheduleLabel}. Archives will appear here after the first update.</p></div>`;
-    }
+    container.innerHTML = '';
+    container.appendChild(archiveDiv);
   }
+
+  // Fetch archive from Redis and render
+  loadArchive().then(archive => {
+    const catWin = winMap[cat];
+    // Filter sessions for this category
+    const pastSessions = archive.filter(s => s.win === catWin);
+
+    if (!pastSessions.length) {
+      const scheduleLabel = cat==='geopolitical'?'6am–12pm':cat==='climate'?'12pm–6pm':'6pm–6am';
+      if (live.length > 0) {
+        archiveDiv.remove();
+      } else {
+        container.innerHTML = `<div class="error-state"><h3>No archived stories yet</h3><p>${cat.charAt(0).toUpperCase()+cat.slice(1)} updates run ${scheduleLabel}. Archives will appear here after the first update.</p></div>`;
+      }
+      return;
+    }
+
+    const dmSans = "font-family:'DM Sans',sans-serif";
+    let html = `<div style="${dmSans};font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1.5rem;">Previous Updates</div>`;
+
+    pastSessions.forEach(session => {
+      const dateLabel = session.savedAt
+        ? new Date(session.savedAt).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})
+        : session.dateStr || 'Recent';
+      const sessionLabel = session.win==='geo'?'Geopolitical Update':session.win==='clim'?'Climate Update':'Economic Update';
+      const key = `${dateLabel} — ${sessionLabel}`;
+      html += `<div style="margin-bottom:2rem;">
+        <div style="${dmSans};font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:0.4rem;margin-bottom:1rem;">${key}</div>
+        <div class="main-grid">${session.articles.map((a,i)=>i===0?mkHero(a):i<3?mkWide(a):mkNormal(a)).join('')}</div>
+      </div>`;
+    });
+
+    archiveDiv.innerHTML = html;
+  });
 }
 
 function updateNavCounts() {
@@ -780,29 +772,10 @@ const PLACEHOLDER = {
   ]
 };
 
-// Load from cache or show placeholder then fetch
-(function(){
-  try {
-    const CACHE_VERSION = '4';
-    const h=new Date().getHours();
-    const sessionCat=h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
-    const cacheKey='pc_data_'+sessionCat;
-    const d=localStorage.getItem(cacheKey), ts=localStorage.getItem('pc_ts_'+sessionCat), cv=localStorage.getItem('pc_ver');
-    if(d&&ts&&cv===CACHE_VERSION&&(Date.now()-parseInt(ts))<6*60*60*1000){
-      const parsed=JSON.parse(d); if(!parsed||!parsed.articles){throw new Error('bad cache');}
-      allArticles=parsed.articles||[];
-      renderBoard(parsed);
-      renderArticles(allArticles, false);
-      scheduleNext();
-      updateNavCounts();
-      return;
-    }
-  } catch(e){}
-  // Show placeholder instantly, then load real data in background
-  allArticles = PLACEHOLDER.articles;
-  renderBoard(PLACEHOLDER);
-  loadNews();
-})();
+// Show placeholder instantly, then fetch real data from Redis/Anthropic
+allArticles = PLACEHOLDER.articles;
+renderBoard(PLACEHOLDER);
+loadNews();
 </script>
 <!-- Privacy Policy Modal -->
 <div class="modal-overlay" id="privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-title" onclick="if(event.target===this)closeModal('privacy-modal')">
@@ -812,7 +785,7 @@ const PLACEHOLDER = {
       <button class="modal-close" onclick="closeModal('privacy-modal')" aria-label="Close privacy policy">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-family:'DM Sans',sans-serif;font-size:0.65rem;color:var(--text-muted);">Last updated: March 19, 2026</p>
+      <p style="font-family:'DM Sans',sans-serif;font-size:0.65rem;color:var(--text-muted);">Last updated: March 6, 2026</p>
 
       <h3>Overview</h3>
       <p>Polycrisis Strategies ("we", "us", or "our") operates polycrisisstrategies.com. This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our site.</p>
@@ -831,7 +804,7 @@ const PLACEHOLDER = {
       <p>· <strong>Anthropic (Claude AI)</strong> — powers our news generation engine<br>
          · <strong>Google AdSense</strong> — may be used to display relevant advertisements<br>
          · <strong>Google Analytics</strong> — anonymous site traffic analysis<br>
-         · <strong>Vercel</strong> — website hosting</p>
+         · <strong>Netlify / GoDaddy</strong> — website hosting</p>
 
       <h3>Data Retention</h3>
       <p>Article history is stored locally in your browser's localStorage for up to 30 days. We do not store any personal data on our servers.</p>
