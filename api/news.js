@@ -1,8 +1,10 @@
 const UPSTASH_URL = process.env.KV_REST_API_URL;
 const UPSTASH_TOKEN = process.env.KV_REST_API_TOKEN;
 
-const SEVEN_DAYS = 7 * 24 * 60 * 60;
+const SEVEN_DAYS      = 7 * 24 * 60 * 60;
+const SIX_HOURS       = 6 * 60 * 60;
 const ARCHIVE_INDEX_KEY = 'archive:index';
+const MAX_ARCHIVE_SESSIONS = 14; // 7 days * 2 sessions avg, keeps payload small
 
 async function redisGet(key) {
   try {
@@ -30,17 +32,29 @@ async function redisSet(key, value, exSeconds) {
   } catch(e) { console.log('Redis SET error:', e.message); }
 }
 
-// Store archive index as a JSON array in a single Redis key
+// Strip heavy fields from articles before archiving — detail is only needed
+// in the live view modal and can be re-fetched if needed. Saves ~60% size.
+function slimArticle(a) {
+  return {
+    id: a.id,
+    category: a.category,
+    severity: a.severity,
+    headline: a.headline,
+    summary: a.summary,
+    source: a.source,
+    time_ago: a.time_ago
+    // detail intentionally omitted from archive
+  };
+}
+
 async function addToArchiveIndex(windowKey, meta) {
   try {
     let index = await redisGet(ARCHIVE_INDEX_KEY) || [];
-    // Avoid duplicates
     if (!index.find(e => e.key === windowKey)) {
       index.unshift({ key: windowKey, ...meta }); // newest first
-      // Keep max 42 entries (7 days * 3 sessions/day)
-      index = index.slice(0, 42);
+      index = index.slice(0, MAX_ARCHIVE_SESSIONS);
       await redisSet(ARCHIVE_INDEX_KEY, index, SEVEN_DAYS);
-      console.log('Archive index updated, total entries:', index.length);
+      console.log('Archive index updated, entries:', index.length);
     }
   } catch(e) { console.log('Archive index error:', e.message); }
 }
@@ -53,7 +67,7 @@ function getWindowInfo() {
   const dateStr = pst.toISOString().slice(0, 10);
   const key = `news:${dateStr}:${win}`;
   console.log('Window key:', key, '| PST hour:', h);
-  return { key, win, dateStr, hour: h };
+  return { key, win, dateStr };
 }
 
 function extractNewsData(anthropicResponse) {
@@ -84,16 +98,17 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ── GET /api/news?archive=true ── return past sessions from Redis
+  // ── GET /api/news?archive=true ── return slim past sessions from Redis
   if (req.method === 'GET') {
     if (req.query && req.query.archive === 'true') {
       try {
         const index = await redisGet(ARCHIVE_INDEX_KEY) || [];
-        console.log('Archive index fetched, entries:', index.length);
+        console.log('Archive index entries:', index.length);
 
         const { key: currentKey } = getWindowInfo();
         const pastEntries = index.filter(e => e.key !== currentKey);
 
+        // Fetch slim article data for each past session
         const results = await Promise.all(
           pastEntries.map(async (entry) => {
             const data = await redisGet(entry.key);
@@ -103,7 +118,7 @@ module.exports = async function handler(req, res) {
               win: entry.win,
               dateStr: entry.dateStr,
               savedAt: entry.savedAt,
-              articles: data.articles
+              articles: data.articles.map(slimArticle) // strip detail field
             };
           })
         );
@@ -121,7 +136,7 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // ── POST /api/news ── serve current window articles
+  // ── POST /api/news ── serve current window articles (full, with detail)
   try {
     const { key: windowKey, win, dateStr } = getWindowInfo();
     console.log('Checking cache for key:', windowKey);
@@ -160,10 +175,10 @@ module.exports = async function handler(req, res) {
 
     console.log('Parsed OK, articles:', newsData.articles.length);
 
-    // Store for 7 days so archive can access past sessions
+    // Store full data (with detail) for 7 days
     await redisSet(windowKey, newsData, SEVEN_DAYS);
 
-    // Register in archive index
+    // Register in archive index (lightweight metadata only)
     await addToArchiveIndex(windowKey, { win, dateStr, savedAt: Date.now() });
 
     res.setHeader('X-Cache', 'MISS');
