@@ -419,9 +419,6 @@ let currentFilter = 'all';
 
 document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-// Always fetch from Redis (via /api/news) — Redis is the single source of truth.
-// localStorage is used only as an instant-display cache of what Redis last returned.
-// This means all devices show the same articles (from Redis), with fast repeat visits.
 async function loadNews(retry=false) {
   const btn = document.getElementById('refresh-btn');
   if(btn){ btn.disabled=true; btn.textContent='↻ Loading…'; }
@@ -451,18 +448,18 @@ async function loadNews(retry=false) {
     const parsed = data;
     parsed.articles = parsed.articles || parsed.stories || parsed.news || parsed.items || [];
     if (!parsed.articles.length) throw new Error('No articles in response: ' + JSON.stringify(data).substring(0,300));
-    console.log('Loaded from Redis, articles:', parsed.articles.length);
+    console.log('Redis response, articles:', parsed.articles.length);
     allArticles = parsed.articles || [];
     renderBoard(parsed);
     updateNavCounts();
     scheduleNext();
-    // Save Redis response to localStorage as display cache for next visit
+    // Save Redis response to localStorage as display cache (for instant next-visit load)
     try {
       const h = new Date().getHours();
       const sCat = h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
       localStorage.setItem('pc_data_'+sCat, JSON.stringify(parsed));
       localStorage.setItem('pc_ts_'+sCat, Date.now()+'');
-      localStorage.setItem('pc_ver', '5'); // bump version to clear old stale data
+      localStorage.setItem('pc_ver', '6');
     } catch(e) {}
     if(btn){ btn.disabled=false; btn.textContent='↻ Refresh'; }
   } catch(err) {
@@ -755,36 +752,32 @@ const PLACEHOLDER = {
   ]
 };
 
-// INIT: Show localStorage instantly if available (fast repeat visits),
-// then always fetch from Redis in background to keep in sync across devices.
+// INIT: Show localStorage instantly if fresh (fast repeat visits),
+// then ALWAYS fetch from Redis in background to sync across all devices.
 (function(){
-  const CACHE_VERSION = '5';
+  const CACHE_VERSION = '6';
   const h = new Date().getHours();
   const sCat = h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
-  let showedCached = false;
   try {
-    const d = localStorage.getItem('pc_data_'+sCat);
+    const d  = localStorage.getItem('pc_data_'+sCat);
     const ts = localStorage.getItem('pc_ts_'+sCat);
     const cv = localStorage.getItem('pc_ver');
-    if (d && ts && cv === CACHE_VERSION && (Date.now() - parseInt(ts)) < 6*60*60*1000) {
+    if (d && ts && cv === CACHE_VERSION && (Date.now()-parseInt(ts)) < 6*60*60*1000) {
       const parsed = JSON.parse(d);
       if (parsed && parsed.articles && parsed.articles.length) {
         allArticles = parsed.articles;
         renderBoard(parsed);
         scheduleNext();
         updateNavCounts();
-        showedCached = true;
-        console.log('Showing localStorage cache instantly');
+        console.log('Showing localStorage instantly, fetching Redis in background…');
+        loadNews(); // always sync with Redis — updates display if articles differ
+        return;
       }
     }
   } catch(e) {}
-
-  // Always fetch from Redis in background to sync across devices
-  // If Redis returns different articles, update the display
-  if (!showedCached) {
-    allArticles = PLACEHOLDER.articles;
-    renderBoard(PLACEHOLDER);
-  }
+  // No valid cache — show placeholder then fetch
+  allArticles = PLACEHOLDER.articles;
+  renderBoard(PLACEHOLDER);
   loadNews();
 })();
 </script>
