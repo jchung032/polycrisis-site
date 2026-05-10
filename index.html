@@ -459,7 +459,7 @@ async function loadNews(retry=false) {
       const sCat = h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
       localStorage.setItem('pc_data_'+sCat, JSON.stringify(parsed));
       localStorage.setItem('pc_ts_'+sCat, Date.now()+'');
-      localStorage.setItem('pc_ver', '6');
+      localStorage.setItem('pc_ver', '7');
     } catch(e) {}
     if(btn){ btn.disabled=false; btn.textContent='↻ Refresh'; }
   } catch(err) {
@@ -493,22 +493,38 @@ function renderBoard(d) {
   setTimeout(appendPastArticles, 100);
 }
 
-function appendPastArticles() {
+async function appendPastArticles() {
   const h = new Date().getHours();
   const cat = h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
+  const win = h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
+
   let history = [];
-  try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
-  // Exclude articles already shown as live (by headline match)
+  // Try Redis first
+  try {
+    const res = await fetch(`/api/news?history=${win}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.articles && data.articles.length) history = data.articles;
+    }
+  } catch(e) {}
+
+  // Fallback to localStorage if Redis returned nothing
+  if (!history.length) {
+    try { history = JSON.parse(localStorage.getItem('pc_history')||'[]'); } catch(e) {}
+    history = history.filter(a => a.category === cat);
+  }
+
+  // Exclude articles already shown as live
   const liveHeadlines = new Set(allArticles.map(a=>a.headline));
-  const pastArticles = history.filter(a=>a.category===cat && !liveHeadlines.has(a.headline));
+  const pastArticles = history.filter(a => !liveHeadlines.has(a.headline));
   if(!pastArticles.length) return;
+
   const container = document.getElementById('news-container');
   if(!container) return;
   const groups = {}, order = [];
   pastArticles.forEach(a => {
     const dateLabel = a.savedAt ? new Date(a.savedAt).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) : 'Recent';
-    const sessionLabel = a.session ? (a.session.charAt(0).toUpperCase()+a.session.slice(1)+' Update') : 'Update';
-    const key = dateLabel + ' — ' + sessionLabel;
+    const key = dateLabel;
     if(!groups[key]){ groups[key]=[]; order.push(key); }
     groups[key].push(a);
   });
@@ -616,35 +632,44 @@ function mkNormal(a) {
   </div>`;
 }
 
-function filterCat(cat,btn) {
+async function filterCat(cat,btn) {
   currentFilter=cat;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
 
   const h = new Date().getHours();
   const scheduledCat = h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
+  const winMap = {geopolitical:'geo',climate:'clim',economic:'econ'};
+  const win = winMap[cat];
 
+  // Fetch history from Redis
   let history = [];
-  try{ history = JSON.parse(localStorage.getItem('pc_history')||'[]'); }catch(e){}
+  try {
+    const res = await fetch(`/api/news?history=${win}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.articles && data.articles.length) history = data.articles;
+    }
+  } catch(e) {}
+  // Fallback localStorage
+  if (!history.length) {
+    try { history = JSON.parse(localStorage.getItem('pc_history')||'[]'); } catch(e) {}
+    history = history.filter(a => a.category === cat);
+  }
 
-  // Exclude articles already shown as live (by headline match)
   const liveHeadlines = new Set(allArticles.map(a=>a.headline));
-  const pastArticles = history.filter(a=>a.category===cat && !liveHeadlines.has(a.headline));
+  const pastArticles = history.filter(a => !liveHeadlines.has(a.headline));
 
   if(cat === scheduledCat) {
-    // Current category: show live articles on top, then past history below
     const liveForCat = allArticles.filter(a=>a.category===cat);
     const live = liveForCat.length > 0 ? liveForCat : allArticles;
     if(pastArticles.length > 0) {
-      // Merge: live articles first (not in history mode), then past grouped by session
       renderArticles(live, false);
-      // Append history below
       const container = document.getElementById('news-container');
       const groups = {}, order = [];
       pastArticles.forEach(a => {
         const dateLabel = a.savedAt ? new Date(a.savedAt).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) : 'Recent';
-        const sessionLabel = a.session ? (a.session.charAt(0).toUpperCase()+a.session.slice(1)+' Update') : 'Update';
-        const key = dateLabel + ' — ' + sessionLabel;
+        const key = dateLabel;
         if(!groups[key]){ groups[key]=[]; order.push(key); }
         groups[key].push(a);
       });
@@ -661,10 +686,8 @@ function filterCat(cat,btn) {
       renderArticles(live, false);
     }
   } else {
-    // Non-scheduled category - show full archive grouped by session
-    const catArticles = history.filter(a=>a.category===cat);
-    if(catArticles.length > 0){
-      renderArticles(catArticles, true);
+    if(history.length > 0){
+      renderArticles(history, true);
     } else {
       const scheduleLabel = cat==='geopolitical'?'6am–12pm':cat==='climate'?'12pm–6pm':'6pm–6am';
       const container = document.getElementById('news-container');
@@ -755,7 +778,7 @@ const PLACEHOLDER = {
 // INIT: Show localStorage instantly if fresh (fast repeat visits),
 // then ALWAYS fetch from Redis in background to sync across all devices.
 (function(){
-  const CACHE_VERSION = '6';
+  const CACHE_VERSION = '7';
   const h = new Date().getHours();
   const sCat = h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
   try {
