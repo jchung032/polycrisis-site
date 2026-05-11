@@ -415,6 +415,7 @@ footer { background:var(--text); color:white; margin-top:3rem; }
 
 <script>
 let allArticles = [];
+let historyArticles = [];
 let currentFilter = 'all';
 
 document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
@@ -495,11 +496,9 @@ function renderBoard(d) {
 
 async function appendPastArticles() {
   const h = new Date().getHours();
-  const cat = h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
   const win = h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
 
   let history = [];
-  // Try Redis first
   try {
     const res = await fetch(`/api/news?history=${win}`);
     if (res.ok) {
@@ -508,13 +507,19 @@ async function appendPastArticles() {
     }
   } catch(e) {}
 
-  // Fallback to localStorage if Redis returned nothing
   if (!history.length) {
     try { history = JSON.parse(localStorage.getItem('pc_history')||'[]'); } catch(e) {}
-    history = history.filter(a => a.category === cat);
   }
 
-  // Exclude articles already shown as live
+  // Assign stable string IDs to history articles so openArticle can find them
+  history = history.map((a, i) => ({
+    ...a,
+    id: a.id || `hist_${win}_${i}`
+  }));
+
+  // Register in historyArticles global so openArticle works
+  historyArticles = history;
+
   const liveHeadlines = new Set(allArticles.map(a=>a.headline));
   const pastArticles = history.filter(a => !liveHeadlines.has(a.headline));
   if(!pastArticles.length) return;
@@ -524,9 +529,8 @@ async function appendPastArticles() {
   const groups = {}, order = [];
   pastArticles.forEach(a => {
     const dateLabel = a.savedAt ? new Date(a.savedAt).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) : 'Recent';
-    const key = dateLabel;
-    if(!groups[key]){ groups[key]=[]; order.push(key); }
-    groups[key].push(a);
+    if(!groups[dateLabel]){ groups[dateLabel]=[]; order.push(dateLabel); }
+    groups[dateLabel].push(a);
   });
   const dmSans = "font-family:sans-serif";
   let archiveHTML = `<div style="margin-top:2rem;border-top:2px solid var(--border);padding-top:1.5rem;">`;
@@ -585,7 +589,8 @@ function renderArticles(articles, historyMode=false) {
 const catLabel=c=>(c||'').charAt(0).toUpperCase()+(c||'').slice(1);
 
 function openArticle(id) {
-  const a = allArticles.find(x => x.id === id);
+  const sid = String(id);
+  const a = allArticles.find(x => String(x.id) === sid) || historyArticles.find(x => String(x.id) === sid);
   if (!a) return;
   document.getElementById('article-modal-title').textContent = a.headline;
   document.getElementById('article-modal-meta').innerHTML = `
@@ -606,7 +611,7 @@ function openArticle(id) {
 }
 
 function mkHero(a) {
-  return `<div class="card-hero" onclick="openArticle(${a.id})" onkeypress="if(event.key==='Enter')openArticle(${a.id})" tabindex="0" role="article" aria-label="${a.headline}" style="display:block;grid-column:span 6;">
+  return `<div class="card-hero" onclick="openArticle('${a.id}')" onkeypress="if(event.key==='Enter')openArticle('${a.id}')" tabindex="0" role="article" aria-label="${a.headline}" style="display:block;grid-column:span 6;">
     <div class="card-cat cat-${a.category}">${catLabel(a.category)}</div>
     <div class="card-hl" style="font-size:2.6rem;margin-bottom:1rem;max-width:820px;">${a.headline}</div>
     <div class="card-body" style="font-size:1.05rem;max-width:700px;">${a.summary}</div>
@@ -615,7 +620,7 @@ function mkHero(a) {
 }
 
 function mkWide(a) {
-  return `<div class="card-wide" onclick="openArticle(${a.id})" onkeypress="if(event.key==='Enter')openArticle(${a.id})" tabindex="0" role="article" aria-label="${a.headline}">
+  return `<div class="card-wide" onclick="openArticle('${a.id}')" onkeypress="if(event.key==='Enter')openArticle('${a.id}')" tabindex="0" role="article" aria-label="${a.headline}">
     <div class="card-cat cat-${a.category}">${catLabel(a.category)}</div>
     <div class="card-hl">${a.headline}</div>
     <div class="card-body">${a.summary}</div>
@@ -624,7 +629,7 @@ function mkWide(a) {
 }
 
 function mkNormal(a) {
-  return `<div class="card-normal" onclick="openArticle(${a.id})" onkeypress="if(event.key==='Enter')openArticle(${a.id})" tabindex="0" role="article" aria-label="${a.headline}">
+  return `<div class="card-normal" onclick="openArticle('${a.id}')" onkeypress="if(event.key==='Enter')openArticle('${a.id}')" tabindex="0" role="article" aria-label="${a.headline}">
     <div class="card-cat cat-${a.category}">${catLabel(a.category)}</div>
     <div class="card-hl">${a.headline}</div>
     <div class="card-body">${a.summary}</div>
@@ -656,6 +661,13 @@ async function filterCat(cat,btn) {
     try { history = JSON.parse(localStorage.getItem('pc_history')||'[]'); } catch(e) {}
     history = history.filter(a => a.category === cat);
   }
+
+  // Assign stable IDs and register in historyArticles
+  history = history.map((a, i) => ({
+    ...a,
+    id: a.id || `hist_${win}_${i}`
+  }));
+  historyArticles = history;
 
   const liveHeadlines = new Set(allArticles.map(a=>a.headline));
   const pastArticles = history.filter(a => !liveHeadlines.has(a.headline));
