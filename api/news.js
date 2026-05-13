@@ -61,26 +61,10 @@ function extractNewsData(anthropicResponse) {
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-
-  // GET /api/news?history=geo|clim|econ
-  if (req.method === 'GET') {
-    const win = req.query && req.query.history;
-    if (!win || !['geo','clim','econ'].includes(win)) {
-      return res.status(400).json({ error: 'Missing or invalid ?history= param. Use geo, clim, or econ.' });
-    }
-    try {
-      const historyKey = `history:${win}`;
-      const data = await redisGet(historyKey);
-      return res.status(200).json({ articles: data || [] });
-    } catch(e) {
-      return res.status(500).json({ error: 'Failed to fetch history', details: e.message });
-    }
-  }
-
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
@@ -122,35 +106,6 @@ module.exports = async function handler(req, res) {
 
     console.log('Parsed OK, articles:', newsData.articles.length);
     await redisSet(windowKey, newsData, 6 * 60 * 60);
-
-    // Update rolling history for this category (18 articles, 3-day TTL)
-    try {
-      const win = windowKey.split(':')[2]; // 'geo', 'clim', or 'econ'
-      const historyKey = `history:${win}`;
-      const savedAt = Date.now();
-      const session = win;
-      const newArticles = newsData.articles.map(a => ({ ...a, savedAt, session }));
-
-      let existing = [];
-      try {
-        const cached = await redisGet(historyKey);
-        if (cached && Array.isArray(cached)) existing = cached;
-      } catch(e) {}
-
-      // Remove any articles from the same date+window (avoid duplicates on cache miss retry)
-      const today = new Date(savedAt).toISOString().slice(0, 10);
-      existing = existing.filter(a => {
-        if (!a.savedAt) return true;
-        return new Date(a.savedAt).toISOString().slice(0, 10) !== today;
-      });
-
-      // New articles at front, cap at 18
-      const merged = [...newArticles, ...existing].slice(0, 18);
-      await redisSet(historyKey, merged, 3 * 24 * 60 * 60); // 3-day TTL
-      console.log(`History updated: history:${win}, total articles: ${merged.length}`);
-    } catch(e) {
-      console.log('History update error:', e.message);
-    }
 
     res.setHeader('X-Cache', 'MISS');
     return res.status(200).json(newsData);
