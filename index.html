@@ -510,11 +510,12 @@ async function appendPastArticles() {
     }
   } catch(e) {}
 
-  // Assign stable string IDs and register in historyArticles
-  history = history.map((a, i) => ({ ...a, id: a.id || `hist_${win}_${i}` }));
+    // Assign stable string IDs and register in historyArticles
+  // history = history.map((a, i) => ({ ...a, id: a.id || `hist_${win}_${i}` })); // news.js now provides IDs
   historyArticles = history;
 
   const liveHeadlines = new Set(allArticles.map(a=>a.headline));
+  // Filter out articles that are already displayed as 'live' to avoid duplicates
   const pastArticles = history.filter(a => !liveHeadlines.has(a.headline));
   if(!pastArticles.length) return;
 
@@ -655,6 +656,7 @@ async function filterCat(cat,btn) {
   historyArticles = history;
 
   const liveHeadlines = new Set(allArticles.map(a=>a.headline));
+  // Filter out articles that are already displayed as 'live' to avoid duplicates
   const pastArticles = history.filter(a => !liveHeadlines.has(a.headline));
 
   if(cat === scheduledCat) {
@@ -774,7 +776,7 @@ const PLACEHOLDER = {
 // INIT: Show localStorage instantly if fresh (fast repeat visits),
 // then ALWAYS fetch from Redis in background to sync across all devices.
 (function(){
-  const CACHE_VERSION = '7';
+  const CACHE_VERSION = '9'; // Increment cache version to force refresh
   const h = new Date().getHours();
   const sCat = h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
   try {
@@ -784,6 +786,8 @@ const PLACEHOLDER = {
     if (d && ts && cv === CACHE_VERSION && (Date.now()-parseInt(ts)) < 6*60*60*1000) {
       const parsed = JSON.parse(d);
       if (parsed && parsed.articles && parsed.articles.length) {
+        // Ensure all articles have an 'id' for consistent rendering
+        parsed.articles = parsed.articles.map(a => ({ ...a, id: a.id || `local_${a.headline.replace(/\W/g, '_').substring(0, 20)}` }));
         allArticles = parsed.articles;
         renderBoard(parsed);
         scheduleNext();
