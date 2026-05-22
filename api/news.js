@@ -73,11 +73,11 @@ function getWindowKey() {
 
 async function fetchRealNews(category) {
   const queries = {
-    geopolitical: "geopolitical conflict war diplomacy sanctions",
-    climate: "climate change extreme weather natural disaster environment",
-    economic: "global economy stock market trade inflation central bank"
+    geopolitical: "breaking geopolitical conflict military tension diplomatic crisis sanctions when:24h",
+    climate: "breaking extreme weather natural disaster climate emergency flooding wildfire when:24h",
+    economic: "breaking global market economic crisis trade dispute central bank inflation when:24h"
   };
-  const query = queries[category] || "world news";
+  const query = queries[category] || "breaking world news when:24h";
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
   
   try {
