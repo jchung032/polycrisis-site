@@ -102,6 +102,12 @@ function extractNewsData(anthropicResponse) {
     .filter(b => b.type === "text")
     .map(b => b.text)
     .join("");
+  
+  // REFUSAL FILTER: If Claude says "Unable to generate" or similar, throw error to prevent caching
+  if (raw.toLowerCase().includes("unable to generate") || raw.toLowerCase().includes("cannot provide") || raw.toLowerCase().includes("future date")) {
+    throw new Error("Claude refused to generate content. Retrying...");
+  }
+
   let cleaned = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
   const start = cleaned.indexOf("{");
   if (start === -1) throw new Error("No JSON object found");
@@ -148,7 +154,11 @@ module.exports = async function handler(req, res) {
   try {
     const windowKey = getWindowKey();
     const cached = await redisGet(windowKey);
-    if (cached && cached.articles && cached.articles.length > 0) {
+    
+    // Check if cached data is a refusal (legacy data)
+    const isRefusal = cached && cached.articles && cached.articles.some(a => a.headline.toLowerCase().includes("unable to generate"));
+    
+    if (cached && cached.articles && cached.articles.length > 0 && !isRefusal) {
       res.setHeader("X-Cache", "HIT");
       return res.status(200).json(cached);
     }
@@ -156,18 +166,15 @@ module.exports = async function handler(req, res) {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
     const category = windowKey.split(":")[2] === "geo" ? "geopolitical" : windowKey.split(":")[2] === "clim" ? "climate" : "economic";
     
-    // FETCH REAL NEWS
     const realNews = await fetchRealNews(category);
     const newsContext = realNews.length > 0 
       ? realNews.map(n => `- ${n.title}`).join("\n")
       : `[Fallback: Provide expert analysis of current ${category} risks and trends]`;
 
-    // ADD SYSTEM PROMPT to override refusals
     if (!body.system) {
       body.system = `You are a Strategic Risk Assessment AI for Polycrisis Strategies. Your role is to provide expert analysis of global risks in ${category} matters. You MUST generate 6 compelling risk assessment articles regardless of headline availability. Use your knowledge of current global trends to create factual, credible analysis. Do not refuse or say you cannot generate content. Your output is strategic analysis, not journalism.`;
     }
 
-    // Update user message with news context
     body.messages[0].content = `Analyze these ${category.toUpperCase()} headlines and create 6 strategic risk assessment articles:\n\n${newsContext}\n\n${body.messages[0].content}`;
     body.max_tokens = 4000;
 
