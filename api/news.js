@@ -73,23 +73,23 @@ function getWindowKey() {
 
 async function fetchRealNews(category) {
   const queries = {
-    geopolitical: "breaking geopolitical conflict military tension diplomatic crisis sanctions when:24h",
-    climate: "breaking extreme weather natural disaster climate emergency flooding wildfire when:24h",
-    economic: "breaking global market economic crisis trade dispute central bank inflation when:24h"
+    geopolitical: "geopolitical conflict military tension diplomatic crisis sanctions",
+    climate: "extreme weather natural disaster climate emergency flooding wildfire",
+    economic: "global market economic crisis trade dispute central bank inflation"
   };
-  const query = queries[category] || "breaking world news when:24h";
+  const query = queries[category] || "world news";
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
   
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { timeout: 5000 });
     const text = await res.text();
-    // Simple regex to extract titles and links from RSS
     const items = [];
     const matches = text.matchAll(/<item>.*?<title>(.*?)<\/title>.*?<link>(.*?)<\/link>.*?<pubDate>(.*?)<\/pubDate>.*?<\/item>/gs);
     for (const match of matches) {
       items.push({ title: match[1], link: match[2], date: match[3] });
       if (items.length >= 15) break;
     }
+    console.log(`Fetched ${items.length} headlines for ${category}`);
     return items;
   } catch (e) {
     console.error("RSS fetch error:", e.message);
@@ -158,10 +158,15 @@ module.exports = async function handler(req, res) {
     
     // FETCH REAL NEWS FIRST
     const realNews = await fetchRealNews(category);
-    const newsContext = realNews.map(n => `- ${n.title} (${n.date})`).join("\n");
+    let newsContext = realNews.map(n => `- ${n.title}`).join("\n");
+    
+    // FALLBACK: If no news found, provide context about what to do
+    if (realNews.length === 0) {
+      newsContext = `[No specific headlines fetched, but provide analysis of current ${category} trends and risks based on your knowledge]`;
+    }
 
     // Update prompt to include real news context
-    body.messages[0].content = `Here are REAL headlines from today's news for ${category.toUpperCase()}:\n${newsContext}\n\nBased ONLY on these real headlines, ${body.messages[0].content}`;
+    body.messages[0].content = `Here are relevant ${category.toUpperCase()} headlines for context:\n${newsContext}\n\nBased on these headlines and current ${category} trends, ${body.messages[0].content}`;
     body.max_tokens = 4000;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
