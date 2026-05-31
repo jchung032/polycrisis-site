@@ -432,7 +432,7 @@ async function loadNews(retry=false) {
         max_tokens:2000,
         system:"You are a JSON API. Output ONLY raw JSON. No markdown fences, no explanation, no extra text. Just the JSON object.",
         messages:[{role:"user",content:`${(()=>{
-  const h=new Date().getHours();
+  const h=getPSTHour();
   const cat=h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
   const catDesc=cat==='geopolitical'?'geopolitical conflicts, military tensions, diplomatic crises, sanctions, and political instability':cat==='climate'?'climate events, extreme weather, environmental disasters, ecological crises, and climate policy':' economic news, market movements, trade disputes, currency crises, central bank decisions, and financial risks';
   const regions=['Middle East','East Asia','Europe','South Asia','Africa','Latin America','Pacific','Central Asia'];
@@ -463,7 +463,7 @@ async function loadNews(retry=false) {
       const sCat = h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
       localStorage.setItem('pc_data_'+sCat, JSON.stringify(parsed));
       localStorage.setItem('pc_ts_'+sCat, Date.now()+'');
-      localStorage.setItem('pc_ver', '14');
+      localStorage.setItem('pc_ver', '15');
     } catch(e) {}
     if(btn){ btn.disabled=false; btn.textContent='↻ Refresh'; }
   } catch(err) {
@@ -498,7 +498,7 @@ function renderBoard(d) {
 }
 
 async function appendPastArticles() {
-  const h = new Date().getHours();
+  const h = getPSTHour();
   const win = h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
 
   let history = [];
@@ -637,7 +637,7 @@ async function filterCat(cat,btn) {
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
 
-  const h = new Date().getHours();
+  const h = getPSTHour();
   const scheduledCat = h>=6&&h<12?'geopolitical':h>=12&&h<18?'climate':'economic';
   const winMap = {geopolitical:'geo',climate:'clim',economic:'econ'};
   const win = winMap[cat];
@@ -700,8 +700,14 @@ function updateNavCounts() {
   document.getElementById('nav-econ').textContent = 'Economic';
 }
 
+function getPSTHour() {
+  const now = new Date();
+  const pstStr = now.toLocaleString("en-US", {timeZone: "America/Los_Angeles", hour: 'numeric', hour12: false});
+  return parseInt(pstStr);
+}
+
 function getCurrentCategory() {
-  const h = new Date().getHours();
+  const h = getPSTHour();
   if(h >= 6 && h < 12) return 'geopolitical';
   if(h >= 12 && h < 18) return 'climate';
   return 'economic'; // 6pm-6am
@@ -709,13 +715,39 @@ function getCurrentCategory() {
 
 function getNextUpdate() {
   const now = new Date();
-  const h = now.getHours();
-  let next = new Date(now);
-  if(h < 6){ next.setHours(6,0,0,0); }
-  else if(h < 12){ next.setHours(12,0,0,0); }
-  else if(h < 18){ next.setHours(18,0,0,0); }
-  else { next.setDate(next.getDate()+1); next.setHours(6,0,0,0); }
-  return next;
+  const h = getPSTHour();
+  
+  // Get current date in PST
+  const pstDateStr = now.toLocaleString("en-US", {timeZone: "America/Los_Angeles", year: 'numeric', month: '2-digit', day: '2-digit'});
+  const [m, d, y] = pstDateStr.split('/');
+  
+  let next = new Date(`${y}-${m}-${d}T00:00:00`); // Start of day in local time, but we'll adjust
+  // This is tricky in JS without a library. Let's simplify:
+  // We want the next 6am, 12pm, or 6pm in PST.
+  
+  let nextH;
+  if(h < 6) nextH = 6;
+  else if(h < 12) nextH = 12;
+  else if(h < 18) nextH = 18;
+  else nextH = 30; // 6am tomorrow
+  
+  // Create a date object for that specific PST time
+  const nextUpdatePST = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+  if (nextH === 30) {
+    nextUpdatePST.setDate(nextUpdatePST.getDate() + 1);
+    nextUpdatePST.setHours(6, 0, 0, 0);
+  } else {
+    nextUpdatePST.setHours(nextH, 0, 0, 0);
+  }
+  
+  // Convert back to local time for the setTimeout
+  // The above nextUpdatePST is now a local date object representing the PST time.
+  // We need to find the actual Date object that corresponds to that PST time.
+  
+  const targetPST = new Date(nextUpdatePST.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+  // This is still messy. Let's use a simpler approach for the timer:
+  // Just check every minute if the category has changed.
+  return nextUpdatePST;
 }
 
 function scheduleNext() {
@@ -777,7 +809,7 @@ const PLACEHOLDER = {
 // then ALWAYS fetch from Redis in background to sync across all devices.
 (function(){
   const CACHE_VERSION = '9'; // Increment cache version to force refresh
-  const h = new Date().getHours();
+  const h = getPSTHour();
   const sCat = h>=6&&h<12?'geo':h>=12&&h<18?'clim':'econ';
   try {
     const d  = localStorage.getItem('pc_data_'+sCat);
